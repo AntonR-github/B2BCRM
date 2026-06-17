@@ -1,0 +1,64 @@
+'use client'
+import { signIn } from 'next-auth/react'
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+
+export default function LoginPage() {
+  const router = useRouter()
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+    const form = new FormData(e.currentTarget)
+    const result = await signIn('credentials', {
+      email: form.get('email'),
+      password: form.get('password'),
+      redirect: false,
+    })
+    setLoading(false)
+    if (result?.error) {
+      setError('Invalid email or password')
+    } else {
+      router.push('/dashboard')
+    }
+  }
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-slate-950">
+      <div className="w-full max-w-md p-8 bg-slate-900 rounded-xl border border-slate-800">
+        <h1 className="text-2xl font-bold text-white mb-8">Sign in</h1>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+          <div>
+            <label className="block text-sm text-slate-400 mb-2 uppercase tracking-wide">Email</label>
+            <input
+              name="email"
+              type="email"
+              required
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white text-base focus:outline-none focus:border-indigo-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-slate-400 mb-2 uppercase tracking-wide">Password</label>
+            <input
+              name="password"
+              type="password"
+              required
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white text-base focus:outline-none focus:border-indigo-500"
+            />
+          </div>
+          {error && <p className="text-red-400 text-base">{error}</p>}
+          <button
+            type="submit"
+            disabled={loading}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-lg text-base font-medium disabled:opacity-50"
+          >
+            {loading ? 'Signing in...' : 'Sign in'}
+          </button>
+        </form>
+      </div>
+    </div>
+  )
+}
