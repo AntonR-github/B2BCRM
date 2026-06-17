@@ -1,21 +1,23 @@
-import { v2 as cloudinary } from 'cloudinary'
+import { createClient } from '@supabase/supabase-js'
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-})
+const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
+
+const BUCKET = 'crm-images'
 
 export async function uploadImage(file: File): Promise<string> {
-  const arrayBuffer = await file.arrayBuffer()
-  const buffer = Buffer.from(arrayBuffer)
+  const ext = file.name.split('.').pop() ?? 'jpg'
+  const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
 
-  return new Promise((resolve, reject) => {
-    cloudinary.uploader
-      .upload_stream({ folder: 'crm' }, (error, result) => {
-        if (error || !result) reject(error)
-        else resolve(result.secure_url)
-      })
-      .end(buffer)
+  const { error } = await supabase.storage.from(BUCKET).upload(path, file, {
+    contentType: file.type,
+    upsert: false,
   })
+
+  if (error) throw error
+
+  const { data } = supabase.storage.from(BUCKET).getPublicUrl(path)
+  return data.publicUrl
 }
