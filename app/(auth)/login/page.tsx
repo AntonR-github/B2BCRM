@@ -12,17 +12,22 @@ export default function LoginPage() {
     e.preventDefault()
     setLoading(true)
     setError('')
-    const form = new FormData(e.currentTarget)
-    const result = await signIn('credentials', {
-      email: form.get('email'),
-      password: form.get('password'),
-      redirect: false,
-    })
-    setLoading(false)
-    if (result?.error) {
-      setError('Invalid email or password')
-    } else {
-      router.push('/dashboard')
+    try {
+      const form = new FormData(e.currentTarget)
+      const result = await signIn('credentials', {
+        email: form.get('email'),
+        password: form.get('password'),
+        redirect: false,
+      })
+      if (!result?.ok) {
+        setError('Invalid email or password')
+      } else {
+        router.push('/dashboard')
+      }
+    } catch {
+      setError('Something went wrong. Please try again.')
+    } finally {
+      setLoading(false)
     }
   }
 
