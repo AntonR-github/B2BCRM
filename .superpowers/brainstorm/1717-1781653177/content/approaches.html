@@ -1,0 +1,40 @@
+<h2>How should the CRM be structured?</h2>
+<p class="subtitle">Three approaches to organizing the system — pick the one that feels right</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Flat & Simple <span style="font-size:12px;color:#22c55e;font-weight:600">Recommended</span></h3>
+      <p>One CRM app. Each website is a "Site" in the database. The client logs in and sees all their sites in a sidebar. Click a site → manage its blogs and text fields. You (admin) add new sites via a simple admin panel.</p>
+      <div class="pros-cons" style="margin-top:12px">
+        <div class="pros"><h4>Pros</h4><ul><li>Simple to build & use</li><li>Fast to add new sites</li><li>One deployment</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Less separation between sites</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Site-Scoped with Permissions</h3>
+      <p>Same as A but with per-user, per-site access control. You can assign editors to specific sites only. The client owner sees all sites; their employees only see assigned ones.</p>
+      <div class="pros-cons" style="margin-top:12px">
+        <div class="pros"><h4>Pros</h4><ul><li>Fine-grained control</li><li>Scalable if client grows</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>More complex to build</li><li>Possibly overkill now</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Per-Site API Keys</h3>
+      <p>Each site gets its own API key. The Next.js site authenticates with that key to pull content. Editors log into the CRM and manage all sites. Tight API-level separation.</p>
+      <div class="pros-cons" style="margin-top:12px">
+        <div class="pros"><h4>Pros</h4><ul><li>Strong API isolation</li><li>Easy to revoke access per site</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>More DevOps overhead</li><li>Overkill for one client</li></ul></div>
+      </div>
+    </div>
+  </div>
+</div>

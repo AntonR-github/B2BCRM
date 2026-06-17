@@ -1,0 +1,73 @@
+<h2>System Architecture</h2>
+<p class="subtitle">How all the pieces connect</p>
+
+<div class="mockup">
+  <div class="mockup-header">Architecture Overview</div>
+  <div class="mockup-body" style="padding:24px;font-family:monospace;font-size:13px;line-height:1.8">
+
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:24px">
+
+      <div style="background:#1e293b;border:1px solid #334155;border-radius:8px;padding:16px;text-align:center">
+        <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Client Editor</div>
+        <div style="font-size:22px;margin-bottom:6px">👤</div>
+        <div style="color:#e2e8f0;font-size:13px">Logs into CRM</div>
+        <div style="color:#94a3b8;font-size:11px">Writes blogs, edits text, uploads images</div>
+      </div>
+
+      <div style="background:#1e293b;border:2px solid #6366f1;border-radius:8px;padding:16px;text-align:center">
+        <div style="font-size:11px;color:#818cf8;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">CRM App — Vercel</div>
+        <div style="font-size:22px;margin-bottom:6px">🖥️</div>
+        <div style="color:#e2e8f0;font-size:13px">Next.js (App Router)</div>
+        <div style="color:#94a3b8;font-size:11px;margin-top:6px">Admin UI + Content API</div>
+        <div style="margin-top:10px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap">
+          <span style="background:#312e81;color:#a5b4fc;padding:2px 8px;border-radius:4px;font-size:10px">NextAuth</span>
+          <span style="background:#312e81;color:#a5b4fc;padding:2px 8px;border-radius:4px;font-size:10px">Prisma</span>
+          <span style="background:#312e81;color:#a5b4fc;padding:2px 8px;border-radius:4px;font-size:10px">TipTap</span>
+        </div>
+      </div>
+
+      <div style="background:#1e293b;border:1px solid #334155;border-radius:8px;padding:16px;text-align:center">
+        <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Storage</div>
+        <div style="font-size:22px;margin-bottom:6px">🗄️</div>
+        <div style="color:#e2e8f0;font-size:13px">Neon (PostgreSQL)</div>
+        <div style="color:#94a3b8;font-size:11px;margin-top:4px">+ Cloudinary (images)</div>
+      </div>
+
+    </div>
+
+    <div style="text-align:center;color:#64748b;font-size:20px;margin-bottom:16px">↕ REST API (JSON)</div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+      <div style="background:#0f172a;border:1px solid #1e3a5f;border-radius:8px;padding:12px;text-align:center">
+        <div style="font-size:11px;color:#38bdf8;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Site A — Vercel</div>
+        <div style="color:#e2e8f0;font-size:12px">Next.js website</div>
+        <div style="color:#64748b;font-size:11px;margin-top:4px">Fetches via ISR</div>
+      </div>
+      <div style="background:#0f172a;border:1px solid #1e3a5f;border-radius:8px;padding:12px;text-align:center">
+        <div style="font-size:11px;color:#38bdf8;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Site B — Vercel</div>
+        <div style="color:#e2e8f0;font-size:12px">Next.js website</div>
+        <div style="color:#64748b;font-size:11px;margin-top:4px">Fetches via ISR</div>
+      </div>
+      <div style="background:#0f172a;border:1px solid #1e3a5f;border-radius:8px;padding:12px;text-align:center">
+        <div style="font-size:11px;color:#38bdf8;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Site N — Vercel</div>
+        <div style="color:#e2e8f0;font-size:12px">Next.js website</div>
+        <div style="color:#64748b;font-size:11px;margin-top:4px">Fetches via ISR</div>
+      </div>
+    </div>
+
+    <div style="margin-top:20px;background:#0f172a;border:1px solid #1e293b;border-radius:8px;padding:14px">
+      <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">API Routes the Next.js sites call</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div style="color:#4ade80;font-size:12px"><span style="color:#64748b">GET</span> /api/[site]/blogs</div>
+        <div style="color:#94a3b8;font-size:12px">→ list published blogs</div>
+        <div style="color:#4ade80;font-size:12px"><span style="color:#64748b">GET</span> /api/[site]/blogs/[slug]</div>
+        <div style="color:#94a3b8;font-size:12px">→ single blog post</div>
+        <div style="color:#4ade80;font-size:12px"><span style="color:#64748b">GET</span> /api/[site]/content</div>
+        <div style="color:#94a3b8;font-size:12px">→ all editable text fields</div>
+        <div style="color:#4ade80;font-size:12px"><span style="color:#64748b">POST</span> /api/[site]/revalidate</div>
+        <div style="color:#94a3b8;font-size:12px">→ trigger ISR refresh</div>
+      </div>
+    </div>
+
+  </div>
+</div>

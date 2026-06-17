@@ -1,0 +1,95 @@
+<h2>Blog Editor Layout</h2>
+<p class="subtitle">What the client sees when editing or creating a blog post</p>
+
+<div style="display:flex;flex-direction:column;gap:16px">
+
+  <!-- Top bar -->
+  <div class="mockup">
+    <div class="mockup-header" style="font-size:15px">Top Bar</div>
+    <div class="mockup-body" style="padding:14px 20px;display:flex;justify-content:space-between;align-items:center">
+      <div style="color:#94a3b8;font-size:16px">← Back to blogs</div>
+      <div style="display:flex;gap:10px">
+        <div style="background:#1e293b;border:1px solid #334155;color:#e2e8f0;padding:10px 20px;border-radius:8px;font-size:15px">Save Draft</div>
+        <div style="background:#6366f1;color:white;padding:10px 20px;border-radius:8px;font-size:15px">Publish</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 320px;gap:16px;align-items:flex-start">
+
+    <!-- Left: Content -->
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div class="mockup">
+        <div class="mockup-header" style="font-size:15px">Content</div>
+        <div class="mockup-body" style="padding:20px;display:flex;flex-direction:column;gap:16px">
+          <div>
+            <div style="font-size:13px;color:#94a3b8;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Blog Title</div>
+            <div style="background:#1e293b;border:1px solid #334155;border-radius:8px;padding:12px 16px;color:#e2e8f0;font-size:18px;font-weight:600">How to grow your business in 2025</div>
+          </div>
+          <div>
+            <div style="font-size:13px;color:#94a3b8;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">URL Slug</div>
+            <div style="background:#1e293b;border:1px solid #334155;border-radius:8px;padding:10px 16px;color:#64748b;font-size:14px;font-family:monospace">/blog/how-to-grow-your-business-in-2025</div>
+          </div>
+          <div>
+            <div style="font-size:13px;color:#94a3b8;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Body</div>
+            <div style="background:#1e293b;border:1px solid #334155;border-radius:8px">
+              <div style="padding:10px 16px;border-bottom:1px solid #334155;display:flex;gap:16px;align-items:center">
+                <span style="color:#e2e8f0;font-size:16px;font-weight:700">B</span>
+                <span style="color:#e2e8f0;font-size:16px;font-style:italic">I</span>
+                <span style="color:#e2e8f0;font-size:16px;text-decoration:underline">U</span>
+                <span style="color:#64748b;font-size:15px">H1</span>
+                <span style="color:#64748b;font-size:15px">H2</span>
+                <span style="color:#64748b;font-size:15px">Link</span>
+                <span style="color:#64748b;font-size:15px">🖼 Image</span>
+              </div>
+              <div style="padding:16px;color:#94a3b8;font-size:16px;min-height:200px">Start writing your blog post here...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: SEO + Settings -->
+    <div style="display:flex;flex-direction:column;gap:16px">
+
+      <div class="mockup">
+        <div class="mockup-header" style="font-size:15px">📅 Publish Settings</div>
+        <div class="mockup-body" style="padding:18px;display:flex;flex-direction:column;gap:14px">
+          <div>
+            <div style="font-size:13px;color:#94a3b8;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Status</div>
+            <div style="background:#1e293b;border:1px solid #334155;border-radius:8px;padding:10px 14px;color:#f59e0b;font-size:15px">Draft</div>
+          </div>
+          <div>
+            <div style="font-size:13px;color:#94a3b8;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Publish Date</div>
+            <div style="background:#1e293b;border:1px solid #334155;border-radius:8px;padding:10px 14px;color:#e2e8f0;font-size:15px">Jun 17, 2025</div>
+          </div>
+          <div>
+            <div style="font-size:13px;color:#94a3b8;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Featured Image</div>
+            <div style="background:#1e293b;border:2px dashed #334155;border-radius:8px;padding:24px;text-align:center;color:#64748b;font-size:15px">Click to upload image</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mockup">
+        <div class="mockup-header" style="font-size:15px">🔍 SEO</div>
+        <div class="mockup-body" style="padding:18px;display:flex;flex-direction:column;gap:14px">
+          <div>
+            <div style="font-size:13px;color:#94a3b8;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Meta Title</div>
+            <div style="background:#1e293b;border:1px solid #334155;border-radius:8px;padding:10px 14px;color:#e2e8f0;font-size:15px">How to grow your business in 2025</div>
+            <div style="color:#64748b;font-size:13px;margin-top:4px">52 / 60 characters</div>
+          </div>
+          <div>
+            <div style="font-size:13px;color:#94a3b8;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Meta Description</div>
+            <div style="background:#1e293b;border:1px solid #334155;border-radius:8px;padding:10px 14px;color:#e2e8f0;font-size:15px;min-height:72px">Learn the top strategies to scale your business fast in 2025.</div>
+            <div style="color:#64748b;font-size:13px;margin-top:4px">78 / 160 characters</div>
+          </div>
+          <div>
+            <div style="font-size:13px;color:#94a3b8;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">OG Image</div>
+            <div style="background:#1e293b;border:2px dashed #334155;border-radius:8px;padding:20px;text-align:center;color:#64748b;font-size:15px">Click to upload OG image</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
