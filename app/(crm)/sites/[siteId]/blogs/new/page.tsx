@@ -4,6 +4,7 @@ import { saveBlog } from '@/app/actions/blog'
 import { BlogEditor } from '@/components/blog-editor'
 import { SeoPanel } from '@/components/seo-panel'
 import { ImageUpload } from '@/components/image-upload'
+import { TagsInput } from '@/components/tags-input'
 
 export default async function NewBlogPage({
   params,
@@ -48,6 +49,10 @@ export default async function NewBlogPage({
               placeholder="auto-generated from title if left empty"
               className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-slate-400 text-base font-mono focus:outline-none focus:border-indigo-500"
             />
+          </div>
+          <div>
+            <label className="block text-sm text-slate-400 mb-2 uppercase tracking-wide">Tags</label>
+            <TagsInput />
           </div>
           <div>
             <label className="block text-sm text-slate-400 mb-2 uppercase tracking-wide">Body</label>

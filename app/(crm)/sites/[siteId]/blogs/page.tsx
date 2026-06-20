@@ -8,13 +8,16 @@ export default async function BlogsPage({
   params: Promise<{ siteId: string }>
 }) {
   const { siteId } = await params
-  const site = await prisma.site.findUnique({ where: { id: siteId } })
+  const site = await prisma.site.findUnique({
+    where: { id: siteId },
+    select: { id: true, name: true, revalidateUrl: true },
+  })
   if (!site) notFound()
 
   const blogs = await prisma.blogPost.findMany({
     where: { siteId },
     orderBy: { createdAt: 'desc' },
-    select: { id: true, title: true, status: true, publishedAt: true, createdAt: true },
+    select: { id: true, title: true, slug: true, status: true, publishedAt: true, createdAt: true },
   })
 
   return (
@@ -40,7 +43,12 @@ export default async function BlogsPage({
             className="flex items-center justify-between bg-slate-900 border border-slate-800 rounded-xl px-5 py-4"
           >
             <div>
-              <p className="text-white text-base font-medium">{blog.title}</p>
+              <Link
+                href={`/sites/${siteId}/blogs/${blog.id}`}
+                className="text-white text-base font-medium hover:text-indigo-400 transition-colors"
+              >
+                {blog.title}
+              </Link>
               <p className="text-slate-500 text-sm mt-1">
                 {blog.status === 'PUBLISHED' && blog.publishedAt
                   ? `Published · ${new Date(blog.publishedAt).toLocaleDateString()}`

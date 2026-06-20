@@ -9,9 +9,11 @@ export async function saveSiteSeo(formData: FormData) {
 
   const siteId = formData.get('siteId') as string
   const data = {
-    metaTitle: (formData.get('metaTitle') as string) || null,
+    metaTitle:       (formData.get('metaTitle')       as string) || null,
     metaDescription: (formData.get('metaDescription') as string) || null,
-    ogImage: (formData.get('ogImage') as string) || null,
+    ogImage:         (formData.get('ogImage')         as string) || null,
+    schemaLogo:      (formData.get('schemaLogo')      as string) || null,
+    schemaSameAs:    (formData.get('schemaSameAs')    as string) || null,
   }
 
   await prisma.siteSEO.upsert({
@@ -21,4 +23,14 @@ export async function saveSiteSeo(formData: FormData) {
   })
 
   revalidatePath(`/sites/${siteId}/seo`)
+
+  // Ping the site's revalidation endpoint so the layout metadata refreshes
+  const site = await prisma.site.findUnique({ where: { id: siteId } })
+  if (site?.revalidateUrl) {
+    await fetch(`${site.revalidateUrl}/api/revalidate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ secret: site.revalidateSecret, path: '/' }),
+    }).catch(() => {})
+  }
 }

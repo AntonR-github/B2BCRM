@@ -8,8 +8,9 @@ export async function POST(request: Request) {
 
   const formData = await request.formData()
   const file = formData.get('file') as File
+  const siteSlug = (formData.get('siteSlug') as string | null) ?? 'general'
   if (!file) return NextResponse.json({ error: 'No file provided' }, { status: 400 })
 
-  const url = await uploadImage(file)
+  const url = await uploadImage(file, siteSlug)
   return NextResponse.json({ url })
 }

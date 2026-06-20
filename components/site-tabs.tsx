@@ -6,9 +6,16 @@ export function SiteTabs({ siteId }: { siteId: string }) {
   const pathname = usePathname()
 
   const tabs = [
-    { label: '📝 Blogs', href: `/sites/${siteId}/blogs` },
-    { label: '✏️ Content', href: `/sites/${siteId}/content` },
-    { label: '🔍 SEO', href: `/sites/${siteId}/seo` },
+    { label: '📊 Dashboard',   href: `/sites/${siteId}/dashboard` },
+    { label: '📝 Blogs',       href: `/sites/${siteId}/blogs` },
+    { label: '✏️ Content',     href: `/sites/${siteId}/content` },
+    { label: '🔍 SEO',        href: `/sites/${siteId}/seo` },
+    { label: '📬 Submissions', href: `/sites/${siteId}/submissions` },
+    { label: '📦 Products',   href: `/sites/${siteId}/products` },
+    { label: '🛒 Orders',     href: `/sites/${siteId}/orders` },
+    { label: '🏷 Coupons',    href: `/sites/${siteId}/coupons` },
+    { label: '🖼 Media',       href: `/sites/${siteId}/media` },
+    { label: '⚙️ Settings',   href: `/sites/${siteId}/settings` },
   ]
 
   return (

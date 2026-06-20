@@ -3,9 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
 }
 
 enum Role {
@@ -68,16 +66,96 @@ model VerificationToken {
 }
 
 model Site {
-  id               String       @id @default(cuid())
-  name             String
-  slug             String       @unique
-  apiKey           String       @unique @default(cuid())
-  revalidateSecret String       @default(cuid())
-  revalidateUrl    String?
-  createdAt        DateTime     @default(now())
-  blogs            BlogPost[]
-  textFields       TextField[]
-  siteSeo          SiteSEO?
+  id                   String            @id @default(cuid())
+  name                 String
+  slug                 String            @unique
+  apiKey               String            @unique @default(cuid())
+  revalidateSecret     String            @default(cuid())
+  revalidateUrl        String?
+  payperWebhookSecret  String?
+  payperCategories     String[]          @default([])
+  createdAt            DateTime          @default(now())
+  blogs                BlogPost[]
+  textFields           TextField[]
+  siteSeo              SiteSEO?
+  submissions          FormSubmission[]
+  orders               Order[]
+  coupons              Coupon[]
+  products             Product[]
+}
+
+model Order {
+  id              String   @id
+  siteId          String
+  status          String   @default("pending")
+  total           Float
+  shipping        Float    @default(0)
+  customerName    String
+  customerEmail   String
+  customerPhone   String
+  customerAddress String
+  items           Json
+  payperDocId     String?
+  shippingNote    String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  site            Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@index([siteId, createdAt])
+  @@index([siteId, status])
+}
+
+model Coupon {
+  id        String    @id @default(cuid())
+  siteId    String
+  code      String
+  type      String    @default("PERCENT")
+  value     Float
+  expiresAt DateTime?
+  maxUses   Int?
+  usedCount Int       @default(0)
+  active    Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  site      Site      @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@unique([siteId, code])
+  @@index([siteId])
+}
+
+model Product {
+  id           String   @id @default(cuid())
+  siteId       String
+  handle       String
+  name         String
+  price        Float
+  description  String?
+  badge        String?
+  image        String?
+  payperSku    String?
+  cardFeatures String[] @default([])
+  features     String[] @default([])
+  active       Boolean  @default(true)
+  order        Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  site         Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@unique([siteId, handle])
+  @@index([siteId])
+}
+
+model FormSubmission {
+  id        String   @id @default(cuid())
+  siteId    String
+  name      String
+  email     String
+  phone     String?
+  message   String   @db.Text
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  site      Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@index([siteId, createdAt])
 }
 
 model TextField {
@@ -87,6 +165,7 @@ model TextField {
   label     String
   value     String    @default("") @db.Text
   type      FieldType @default(TEXT)
+  page      String    @default("general")
   order     Int       @default(0)
   site      Site      @relation(fields: [siteId], references: [id], onDelete: Cascade)
 
@@ -105,6 +184,7 @@ model BlogPost {
   metaTitle       String?
   metaDescription String?
   ogImage         String?
+  tags            String[]   @default([])
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
   site            Site       @relation(fields: [siteId], references: [id], onDelete: Cascade)
@@ -120,5 +200,7 @@ model SiteSEO {
   metaTitle       String?
   metaDescription String?
   ogImage         String?
+  schemaLogo      String?
+  schemaSameAs    String? @db.Text
   site            Site    @relation(fields: [siteId], references: [id], onDelete: Cascade)
 }

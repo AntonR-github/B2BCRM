@@ -5,11 +5,13 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 
 function toSlug(title: string): string {
-  return title
+  const ascii = title
     .toLowerCase()
     .replace(/[^a-z0-9\s-]/g, '')
     .trim()
     .replace(/\s+/g, '-')
+  // Hebrew (and other non-ASCII) titles produce an empty string — use timestamp fallback
+  return ascii || `post-${Date.now()}`
 }
 
 export async function saveBlog(formData: FormData) {
@@ -26,6 +28,8 @@ export async function saveBlog(formData: FormData) {
   const metaTitle = formData.get('metaTitle') as string | null
   const metaDescription = formData.get('metaDescription') as string | null
   const ogImage = formData.get('ogImage') as string | null
+  const tagsRaw = formData.get('tags') as string | null
+  const tags = tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(Boolean) : []
 
   const data = {
     title,
@@ -36,6 +40,7 @@ export async function saveBlog(formData: FormData) {
     metaTitle: metaTitle || null,
     metaDescription: metaDescription || null,
     ogImage: ogImage || null,
+    tags,
     publishedAt: status === 'PUBLISHED' ? new Date() : null,
   }
 
@@ -52,11 +57,18 @@ export async function saveBlog(formData: FormData) {
   if (status === 'PUBLISHED') {
     const site = await prisma.site.findUnique({ where: { id: siteId } })
     if (site?.revalidateUrl) {
-      await fetch(`${site.revalidateUrl}/api/revalidate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ secret: site.revalidateSecret, path: '/blog' }),
-      }).catch(() => {})
+      await Promise.all([
+        fetch(`${site.revalidateUrl}/api/revalidate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ secret: site.revalidateSecret, path: '/blog' }),
+        }),
+        fetch(`${site.revalidateUrl}/api/revalidate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ secret: site.revalidateSecret, path: `/blog/${slug}` }),
+        }),
+      ]).catch(() => {})
     }
   }
 

@@ -1,8 +1,8 @@
-# B2B CRM — Content Management System Design
+# B2B CRM — System Documentation
 
 ## Overview
 
-A CRM built in Next.js that acts as a headless content management system for multiple Next.js client websites. The client (non-technical) can log in and manage blog posts, editable text sections, and SEO metadata across all their sites. The developer (admin) sets up and integrates each site.
+A headless CRM built in Next.js that manages content, orders, media, and form submissions for multiple Next.js client websites. The client can log in and manage their site without touching code. The developer sets up and integrates each new site.
 
 ---
 
@@ -10,70 +10,87 @@ A CRM built in Next.js that acts as a headless content management system for mul
 
 | Layer | Technology |
 |---|---|
-| Framework | Next.js (App Router) |
-| Database | PostgreSQL via Neon |
-| ORM | Prisma |
-| Auth | NextAuth.js |
-| Rich text editor | TipTap |
-| Image/media storage | Cloudinary |
-| Hosting | Vercel |
-
----
-
-## Users & Roles
-
-**Admin (developer):**
-- Add and configure new sites
-- Define which text fields are editable per site
-- Create and manage user accounts
-- Access to all sites and all data
-
-**Editor (client + their staff):**
-- Log in and see all sites
-- Write and publish blog posts
-- Edit text field values
-- Set SEO metadata per blog and per site
-- Cannot change design, layout, or code
+| Framework | Next.js 16 (App Router) |
+| Database | PostgreSQL via Supabase |
+| ORM | Prisma 7 + @prisma/adapter-pg |
+| Auth | NextAuth.js v5 |
+| Rich text editor | TipTap v3 |
+| Image/media storage | Supabase Storage (`crm-images` bucket) |
+| Hosting | Vercel (or self-hosted) |
 
 ---
 
 ## Data Model
 
-### User
-```
-id, email, hashedPassword, role (ADMIN | EDITOR), createdAt
-```
-
 ### Site
 ```
-id, name, slug, apiKey, createdAt
+id, name, slug, apiKey, revalidateSecret, revalidateUrl, createdAt
 ```
-- `slug` is used in API routes: `/api/[slug]/...`
-- `apiKey` is a secret the Next.js site sends to authenticate API requests
+- `slug` is used in all API routes: `/api/[slug]/...`
+- `apiKey` is sent by the client site as `x-api-key` header to authenticate requests
+- `revalidateSecret` + `revalidateUrl` — the CRM calls this URL after content changes to trigger ISR on the client site
 
 ### TextField
 ```
-id, siteId, key, label, value, type (TEXT | TEXTAREA), order
+id, siteId, key, label, value, type (TEXT | TEXTAREA), page, order
 ```
-- `key` is the machine name (e.g. `hero_title`)
-- `label` is the human-readable name shown in the CRM (e.g. "Hero Title")
-- `type` controls whether the UI shows a single-line input or multi-line textarea
-- `order` controls the display order in the editor
-- Defined by the admin when setting up a site; the editor only fills in values
+- `key` is the machine name used in the client site (e.g. `hero_title`, `compare.prod1_name`)
+- `page` groups fields into tabs in the content editor (e.g. `general`, `compare`, `shop`)
+- Admin defines fields; editors fill values
 
 ### BlogPost
 ```
 id, siteId, title, slug, body (HTML), status (DRAFT | PUBLISHED),
-publishedAt, featuredImage (Cloudinary URL),
-metaTitle, metaDescription, ogImage (Cloudinary URL),
-createdAt, updatedAt
+publishedAt, featuredImage, metaTitle, metaDescription, ogImage,
+tags[], createdAt, updatedAt
 ```
 
 ### SiteSEO
 ```
-id, siteId, metaTitle, metaDescription, ogImage (Cloudinary URL)
+id, siteId, metaTitle, metaDescription, ogImage, schemaLogo, schemaSameAs
 ```
-- Site-level SEO defaults; individual blog posts can override these
+
+### FormSubmission
+```
+id, siteId, name, email, phone?, message, read (bool), createdAt
+```
+- Created when a contact form is submitted on the client site
+- CRM shows an inbox with unread badge
+
+### Order
+```
+id (external, e.g. XV-1234567890), siteId,
+status (pending | paid | shipped | cancelled),
+total, shipping, customerName, customerEmail, customerPhone, customerAddress,
+items (JSON array of {id, name, price, qty}),
+payperDocId?, shippingNote?, createdAt, updatedAt
+```
+- Created when a customer initiates checkout (status: pending)
+- Marked paid after payment gateway confirms success
+- `shippingNote` is used for tracking numbers or internal notes
+- Status can be updated directly from the Orders tab (dropdown per order)
+- `payperDocId` is the Payper invoice-receipt number, set after generation
+
+### Coupon
+```
+id, siteId, code (unique per site), type (PERCENT | FIXED), value,
+expiresAt?, maxUses?, usedCount, active (bool), createdAt
+```
+- `PERCENT` discounts by percentage of cart subtotal
+- `FIXED` discounts by a flat ILS amount
+- `usedCount` increments when an order using that code is created
+- Disabled coupons and expired/exhausted coupons are rejected at validation
+
+### Product
+```
+id, siteId, handle (URL slug, unique per site), name, price, description?,
+badge?, image?, payperSku?, cardFeatures (string[]), features (string[]),
+active (bool), order (int), createdAt, updatedAt
+```
+- Managed in the CRM Products tab; served via `/api/[siteSlug]/products`
+- Client site falls back to hardcoded products if the API returns empty
+- `payperSku` links to Payper inventory item for stock reduction on invoice
+- `cardFeatures` = short list shown on product card; `features` = full list for detail/compare
 
 ---
 
@@ -82,92 +99,195 @@ id, siteId, metaTitle, metaDescription, ogImage (Cloudinary URL)
 | Route | Description |
 |---|---|
 | `/login` | NextAuth login page |
-| `/dashboard` | Lists all sites in a sidebar; redirects to first site |
+| `/dashboard` | Lists all sites; redirects to first site |
 | `/sites/[siteId]/blogs` | Blog list with draft/published status |
-| `/sites/[siteId]/blogs/new` | Create a new blog post |
-| `/sites/[siteId]/blogs/[blogId]` | Edit a blog post |
-| `/sites/[siteId]/content` | Edit text field values |
+| `/sites/[siteId]/blogs/new` | Create blog post |
+| `/sites/[siteId]/blogs/[blogId]` | Edit blog post |
+| `/sites/[siteId]/content` | Edit text field values; image fields show upload widget |
 | `/sites/[siteId]/seo` | Edit site-level SEO defaults |
+| `/sites/[siteId]/dashboard` | Overview: stats, recent orders, recent submissions |
+| `/sites/[siteId]/submissions` | Contact form inbox with unread count |
+| `/sites/[siteId]/media` | Media library — upload images to Supabase Storage |
+| `/sites/[siteId]/orders` | Orders with status dropdown, tracking notes, Payper doc |
+| `/sites/[siteId]/coupons` | Coupon codes — create, enable/disable, delete |
+| `/sites/[siteId]/products` | Products — create, edit, image upload, Payper SKU |
 | `/admin` | Admin panel — sites, text field definitions, users |
 
 ---
 
-## UI Layout
+## Public API (consumed by client sites)
 
-**Global:**
-- Dark theme throughout
-- Large, readable font sizes (minimum 15px body, 16px+ inputs, 18px+ headings)
-- Sidebar listing all sites; click to switch
-- Top navigation tabs per site: Blogs | Content | SEO
+All routes are under `/api/[siteSlug]/`. Authenticated with `x-api-key: <apiKey>` header.
 
-**Blog Editor (two-column layout):**
-- Left column: title input, auto-generated slug (editable), TipTap rich text body
-- Right sidebar: publish settings (status, date, featured image) + SEO panel (meta title with character counter, meta description with character counter, OG image upload)
-- Top bar: Save Draft + Publish buttons
-
-**Content Tab:**
-- List of labeled text fields defined by the admin
-- Each field shows its label and an input or textarea depending on type
-- Single "Save Changes" button at the bottom
-
-**SEO Tab:**
-- Site-level meta title, meta description, OG image
-- Same large font, same character counters as blog SEO panel
-
-**Admin Panel (admin only):**
-- Add/remove sites (name, slug — API key auto-generated)
-- Per site: add/remove/reorder text field definitions (key, label, type)
-- Add/remove user accounts and assign roles
+| Method | Route | Auth | Description |
+|---|---|---|---|
+| GET | `/api/[siteSlug]/blogs` | No | List all published blog posts |
+| GET | `/api/[siteSlug]/blogs/[blogSlug]` | No | Single published blog post |
+| GET | `/api/[siteSlug]/content` | No | All text field key/value pairs |
+| GET | `/api/[siteSlug]/seo` | No | Site-level SEO defaults |
+| POST | `/api/[siteSlug]/submit` | Yes | Save a contact form submission |
+| POST | `/api/[siteSlug]/orders` | Yes | Create a pending order (also increments coupon usedCount) |
+| POST | `/api/[siteSlug]/orders/[orderId]/confirm` | Yes | Mark order paid + generate Payper invoice |
+| POST | `/api/[siteSlug]/validate-coupon` | No | Validate a coupon code, returns type + value |
+| GET  | `/api/[siteSlug]/products` | No | List active products (60s cache) |
+| POST | `/api/upload` | Session | Upload image to Supabase Storage |
+| DELETE | `/api/media/delete` | Session | Delete image from Supabase Storage |
 
 ---
 
-## Public API (consumed by Next.js client sites)
+## Supabase Storage
 
-All routes are under `/api/[siteSlug]/`. Client sites authenticate by sending the site's API key as a header: `x-api-key: <key>`.
+Images are stored in a single public bucket called `crm-images`.
 
-| Method | Route | Description |
-|---|---|---|
-| GET | `/api/[siteSlug]/blogs` | List all published blog posts |
-| GET | `/api/[siteSlug]/blogs/[blogSlug]` | Single published blog post |
-| GET | `/api/[siteSlug]/content` | All text field key/value pairs |
-| GET | `/api/[siteSlug]/seo` | Site-level SEO defaults |
-| POST | `/api/[siteSlug]/revalidate` | Trigger ISR revalidation (called by CRM on publish) |
+Files are organized by site slug: `{siteSlug}/{timestamp}-{random}.{ext}`
+
+This keeps images per-site without needing separate buckets. The public URL is used directly in content fields and on client sites.
+
+Image fields in content are detected by key suffix: `_image` or `_bg`. They render an upload widget in the content editor instead of a plain text input.
 
 ---
 
-## Next.js Site Integration
+## E-Commerce Integration (xvape pattern)
 
-When the developer adds a new site to the CRM:
-1. Add site in admin panel — get the `slug` and `apiKey`
-2. Store `apiKey` in the Next.js site's `.env` as `CRM_API_KEY`
-3. Store the CRM base URL as `CRM_URL`
-4. In the Next.js site, fetch content using ISR (`revalidate: 60` or similar)
-5. Add a Next.js revalidation route (`/api/revalidate`) that accepts a POST with a secret token and calls `revalidatePath()`
-6. Store the revalidation secret in the CRM admin panel per site; the CRM calls this endpoint on blog publish
+This describes how a client site with a shop and payment flow connects to the CRM + external services.
+
+### Services involved
+
+| Service | Role |
+|---|---|
+| CRM + Supabase | Order storage and management |
+| Payper | Inventory stock levels + automatic invoicing after sale |
+| Hyp Pay | Card payment processing |
+| SMTP | Order confirmation email to customer |
+
+### Payment flow
+
+1. Customer fills checkout form (name, email, phone, address, city, zip)
+2. Client site generates `orderId = XV-{timestamp}`
+3. POST to `/api/hyp-checkout` with `{amount, orderId, shipping, customer, items}`
+4. hyp-checkout route saves **pending order** to CRM, then calls Hyp Pay `APISign`
+5. Returns `paymentUrl` → browser redirects to Hyp Pay hosted payment page
+6. Customer pays → Hyp Pay redirects to `/payment/success?Order=XV-...&Amount=...`
+7. Success page calls `/api/payment/confirm` with `{orderId}`
+8. payment/confirm calls CRM `POST /api/[siteSlug]/orders/[orderId]/confirm`
+9. CRM marks order **paid** + calls Payper `/generate_invoice_receipt`
+10. Payper invoice is emailed to customer; `payperDocId` is stored on the order
+
+### Payper invoice notes
+
+Invoice lines are created from the cart items. To enable automatic stock reduction in Payper, each invoice line needs a `catalog_id` matching the item's Payper SKU (makat). Without `catalog_id`, the invoice is created but stock is not reduced.
+
+Once products are set up in Payper with known SKUs, add the SKU to each product's CMS content fields (e.g. `shop.prod1_sku`) and pass it as `catalog_id` in the invoice line.
+
+### Environment variables (client site)
+
+```env
+# CRM connection (server-side)
+CRM_URL=https://your-crm-domain.com
+CRM_API_KEY=<apiKey from CRM admin panel>
+CRM_SITE_SLUG=<site slug>
+
+# CRM connection (client-side — for coupon validation from browser)
+NEXT_PUBLIC_CRM_URL=https://your-crm-domain.com
+NEXT_PUBLIC_CRM_SITE_SLUG=<site slug>
+
+# Hyp Pay (from Hyp Pay terminal dashboard)
+HYP_MASOF=<terminal number>
+HYP_KEY=<api key>
+HYP_PASSP=<api password>
+
+# Must be set to real domain for Hyp Pay success/failure redirects
+NEXT_PUBLIC_SITE_URL=https://your-client-domain.com
+
+# Payper
+PAYPER_API_KEY=<from Payper Api Settings>
+PAYPER_ACCOUNT=<api_user email from Payper Api Settings>
+
+# Email
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=<gmail address>
+SMTP_PASS=<gmail app password>
+```
+
+### Environment variables (CRM)
+
+```env
+DATABASE_URL=<Supabase pooled connection string>
+DIRECT_URL=<Supabase direct connection string>
+NEXT_PUBLIC_SUPABASE_URL=<Supabase project URL>
+SUPABASE_SERVICE_ROLE_KEY=<Supabase service role key>
+AUTH_SECRET=<random secret for NextAuth>
+AUTH_URL=https://your-crm-domain.com
+PAYPER_API_KEY=<from Payper Api Settings>
+PAYPER_ACCOUNT=<api_user email from Payper Api Settings>
+```
+
+---
+
+## Adding a New Site — Checklist
+
+### 1. CRM setup
+- [ ] Log in to CRM admin panel → Add site (name + slug)
+- [ ] Copy the generated `apiKey` and `revalidateSecret`
+- [ ] Define text fields for the site (key, label, type, page group)
+- [ ] Create the `crm-images` Supabase Storage bucket if it doesn't exist (public, no expiry)
+
+### 2. Client site setup
+- [ ] Add `.env.local` with `CRM_URL`, `CRM_API_KEY`, `CRM_SITE_SLUG`
+- [ ] Add `NEXT_PUBLIC_SITE_URL` set to the real domain
+- [ ] Fetch content with `getContent()` using ISR (`revalidate: 60` or `revalidatePath`)
+- [ ] Add `/api/revalidate` route that calls `revalidatePath('/')` when pinged by CRM
+- [ ] Set `revalidateUrl` in CRM admin to `https://your-client-domain.com/api/revalidate`
+
+### 3. If the site has a contact form
+- [ ] Client site `POST /api/contact` sends form data to CRM `POST /api/[siteSlug]/submit` after emailing
+- [ ] Use `x-api-key` header with the site's API key
+
+### 4. If the site has a shop and payments
+- [ ] Add Hyp Pay credentials to client `.env.local`
+- [ ] Add Payper credentials to both client `.env.local` and CRM `.env.local`
+- [ ] Add SMTP credentials to client `.env.local`
+- [ ] Add `NEXT_PUBLIC_CRM_URL` and `NEXT_PUBLIC_CRM_SITE_SLUG` to client `.env.local` (for coupon validation)
+- [ ] Wire up `POST /api/hyp-checkout` (saves pending order to CRM, returns Hyp Pay URL)
+- [ ] Wire up `POST /api/payment/confirm` (called on success page, confirms order in CRM)
+- [ ] Add products in CRM → Products tab (or start with hardcoded fallbacks)
+- [ ] Set up products in Payper with SKUs; add SKU to each product's `payperSku` field in CRM
+- [ ] Configure success/failure URLs in Hyp Pay terminal dashboard to match `NEXT_PUBLIC_SITE_URL`
+- [ ] Create coupons in CRM → Coupons tab as needed
 
 ---
 
 ## Content Flow
 
-1. Editor logs into CRM
-2. Selects a site from the sidebar
-3. Creates or edits a blog post → fills in title, body, SEO fields → publishes
-4. CRM saves to database, marks post as published, calls `/api/[siteSlug]/revalidate`
-5. The Next.js site's ISR cache is invalidated
-6. Next visitor to the site sees fresh content within seconds
+### Blog post
+1. Editor creates/edits post in CRM → publishes
+2. CRM saves to DB, calls `revalidateUrl` on the client site
+3. Client site ISR cache is cleared; next visitor sees fresh content
 
-For text fields:
-1. Editor goes to the Content tab → updates field values → saves
-2. CRM saves new values to the database
-3. Next ISR revalidation cycle picks up the changes (within ~60 seconds)
+### Text fields / content
+1. Editor updates field values in CRM → saves
+2. CRM saves to DB, calls `revalidateUrl` on the client site
+3. Client site re-fetches content on next request within ISR window
+
+### Image fields
+- Fields with keys ending in `_image` or `_bg` show an upload widget in the content editor
+- Images are uploaded to Supabase Storage under `{siteSlug}/filename`
+- The resulting public URL is saved as the field value and used directly on the client site
 
 ---
 
 ## Key Design Decisions
 
-- **One CRM app, flat structure** — all sites belong to one client; no complex multi-tenancy needed
-- **Admin defines text fields, editor fills values** — clients cannot add or remove editable sections; only the developer can
-- **API key per site** — simple, stateless authentication for the content API; easy to rotate
-- **ISR over SSR** — fast page loads with near-instant content updates; no full rebuilds
-- **Cloudinary for images** — handles resizing, CDN delivery, and storage; no self-hosted file management
-- **TipTap for rich text** — lightweight, extensible, good UX for non-technical users
+- **One CRM, multiple sites** — flat multi-tenancy via site slug; all sites belong to one operator
+- **Supabase for everything** — single platform for DB (PostgreSQL) and file storage; no separate Cloudinary account needed
+- **Orders saved before payment** — order is created as `pending` before redirecting to Hyp Pay, so no order is lost if the user closes the tab after paying
+- **Payper invoice is post-payment** — invoice-receipt is generated only after payment confirmation, which is the legally correct order
+- **API key per site** — simple stateless auth for all public API routes; rotate in CRM admin if compromised
+- **ISR over SSR** — fast page loads with near-instant content updates; no full rebuilds needed
+- **Non-fatal integrations** — CRM submission saving, Payper invoice generation, and ISR revalidation are all wrapped in try/catch so a downstream failure never breaks the user-facing action (email sent, payment taken)
+- **Products fallback** — client site falls back to hardcoded products if CRM returns an empty list, so migration from hardcoded to CRM-managed is gradual and safe
+- **Coupon usage is tracked on order creation** — `usedCount` increments when the order is saved (pending), not on payment, so the slot is reserved even if payment fails
+- **Manual revalidate** — "Refresh site" button on Content and SEO pages lets editors force ISR cache clearing without waiting for the revalidation window
+- **Dashboard** — each site has an overview page showing unread submissions, pending orders, draft posts, and recent activity at a glance

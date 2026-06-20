@@ -4,3 +4,48 @@ body {
   background-color: #020617; /* slate-950 */
   color: #e2e8f0;
 }
+
+.ProseMirror h1 { font-size: 2em; font-weight: 700; margin: 0.67em 0; }
+.ProseMirror h2 { font-size: 1.5em; font-weight: 700; margin: 0.75em 0; }
+.ProseMirror h3 { font-size: 1.25em; font-weight: 600; margin: 0.83em 0; }
+.ProseMirror p  { margin: 0.5em 0; }
+.ProseMirror ul { list-style: disc; padding-left: 1.5em; margin: 0.5em 0; }
+.ProseMirror strong { font-weight: 700; }
+.ProseMirror em     { font-style: italic; }
+
+/* Image resize handles */
+[data-resize-wrapper] { display: inline-block; position: relative; }
+[data-resize-container] img { display: block; max-width: 100%; }
+
+/* Hide handles by default, show only when image is selected */
+[data-resize-handle] { display: none; }
+.ProseMirror-selectednode [data-resize-handle] {
+  display: block;
+  width: 14px;
+  height: 14px;
+  background: #6366f1;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  position: absolute;
+  z-index: 20;
+}
+.ProseMirror-selectednode [data-resize-handle="top-left"]     { cursor: nw-resize; top: -7px;  left: -7px; }
+.ProseMirror-selectednode [data-resize-handle="top-right"]    { cursor: ne-resize; top: -7px;  right: -7px; }
+.ProseMirror-selectednode [data-resize-handle="bottom-left"]  { cursor: sw-resize; bottom: -7px; left: -7px; }
+.ProseMirror-selectednode [data-resize-handle="bottom-right"] { cursor: se-resize; bottom: -7px; right: -7px; }
+.ProseMirror-selectednode [data-resize-wrapper] { outline: 2px solid #6366f1; outline-offset: 2px; }
+/* Float the resize container based on the img's style attribute */
+[data-resize-container]:has(img[style*="float:left"]) {
+  float: left;
+  margin: 0 1.5em 1em 0;
+}
+[data-resize-container]:has(img[style*="float:right"]) {
+  float: right;
+  margin: 0 0 1em 1.5em;
+}
+[data-resize-container]:has(img[style*="margin:0 auto"]) {
+  display: flex !important;
+  justify-content: center;
+  width: 100%;
+}
+.ProseMirror p::after { content: ""; display: table; clear: both; }

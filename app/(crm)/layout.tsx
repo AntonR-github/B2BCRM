@@ -9,7 +9,7 @@ export default async function CRMLayout({ children }: { children: React.ReactNod
 
   const sites = await prisma.site.findMany({
     orderBy: { createdAt: 'asc' },
-    select: { id: true, name: true, slug: true },
+    select: { id: true, name: true, slug: true, revalidateUrl: true },
   })
 
   return (

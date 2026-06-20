@@ -7,6 +7,7 @@ interface Site {
   id: string
   name: string
   slug: string
+  revalidateUrl: string | null
 }
 
 export function Sidebar({

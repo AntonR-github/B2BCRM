@@ -8,17 +8,28 @@ export async function saveTextFields(formData: FormData) {
   if (!session) throw new Error('Unauthorized')
 
   const siteId = formData.get('siteId') as string
-  const fields = await prisma.textField.findMany({ where: { siteId } })
+  const page   = formData.get('page') as string | null
+
+  const fields = await prisma.textField.findMany({
+    where: { siteId, ...(page ? { page } : {}) },
+  })
 
   await Promise.all(
-    fields.map((field) => {
+    fields.map(field => {
       const value = (formData.get(field.key) as string) ?? ''
-      return prisma.textField.update({
-        where: { id: field.id },
-        data: { value },
-      })
+      return prisma.textField.update({ where: { id: field.id }, data: { value } })
     })
   )
 
   revalidatePath(`/sites/${siteId}/content`)
+
+  // Ping the site to bust ISR cache
+  const site = await prisma.site.findUnique({ where: { id: siteId } })
+  if (site?.revalidateUrl) {
+    await fetch(`${site.revalidateUrl}/api/revalidate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ secret: site.revalidateSecret, path: '/' }),
+    }).catch(() => {})
+  }
 }

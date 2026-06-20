@@ -16,7 +16,7 @@ export async function GET(
     where: { siteId: site.id, status: 'PUBLISHED' },
     select: {
       id: true, title: true, slug: true, publishedAt: true,
-      featuredImage: true, metaTitle: true, metaDescription: true,
+      featuredImage: true, metaTitle: true, metaDescription: true, ogImage: true, tags: true,
     },
     orderBy: { publishedAt: 'desc' },
   })
