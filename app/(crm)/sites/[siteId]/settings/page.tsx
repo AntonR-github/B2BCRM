@@ -10,7 +10,7 @@ export default async function SettingsPage({ params }: { params: Promise<{ siteI
   })
   if (!site) notFound()
 
-  const crmUrl = process.env.AUTH_URL || process.env.NEXTAUTH_URL || 'https://www.ducks.co.il'
+  const crmUrl = process.env.CRM_URL || 'https://www.ducks.co.il'
 
   return (
     <div className="p-6 max-w-2xl">
