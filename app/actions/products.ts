@@ -99,6 +99,7 @@ export async function syncPayperProducts(siteId: string): Promise<{ synced: numb
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'API_KEY': apiKey },
         body: JSON.stringify({ api_user: account, page }),
+        signal: AbortSignal.timeout(10000),
       })
     } catch (e: any) {
       return { synced, errors, apiError: `Network error: ${e.message}` }
