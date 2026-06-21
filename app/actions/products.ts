@@ -76,7 +76,7 @@ export async function deleteProduct(id: string, siteId: string) {
 
 export async function clearAllProducts(siteId: string) {
   const session = await auth()
-  if (!session) throw new Error('Unauthorized')
+  if (!session || session.user.role !== 'ADMIN') throw new Error('Forbidden')
   await prisma.product.deleteMany({ where: { siteId } })
   revalidatePath(`/sites/${siteId}/products`)
 }
