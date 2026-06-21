@@ -73,3 +73,70 @@ export async function deleteProduct(id: string, siteId: string) {
   await prisma.product.delete({ where: { id } })
   revalidatePath(`/sites/${siteId}/products`)
 }
+
+export async function syncPayperProducts(siteId: string): Promise<{ synced: number; errors: string[] }> {
+  const session = await auth()
+  if (!session) throw new Error('Unauthorized')
+
+  const site = await prisma.site.findUnique({ where: { id: siteId } })
+  if (!site) throw new Error('Site not found')
+
+  const apiKey  = process.env.PAYPER_API_KEY
+  const account = process.env.PAYPER_ACCOUNT
+  if (!apiKey || !account) throw new Error('Payper credentials not configured')
+
+  const allowedCategories = site.payperCategories ?? []
+
+  const res = await fetch('https://api.payper.co.il/get_inventories', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ api_key: apiKey, account }),
+  })
+
+  if (!res.ok) throw new Error(`Payper API error: ${res.status}`)
+  const data = await res.json()
+  const items: any[] = Array.isArray(data) ? data : data.products ?? data.items ?? []
+
+  let synced = 0
+  const errors: string[] = []
+
+  for (const item of items) {
+    const sku      = item.product_sku ?? item.sku
+    const name     = item.product_name ?? item.name
+    const category = item.category_name ?? item.category
+    const imageUrl = item.image_url ?? item.image
+    const isActive = item.is_active === true || item.is_active === '1' || item.is_active === 'true'
+
+    if (!sku) continue
+    if (allowedCategories.length > 0 && !allowedCategories.includes(category)) continue
+
+    try {
+      const existing = await prisma.product.findFirst({ where: { siteId, payperSku: sku } })
+      if (existing) {
+        await prisma.product.update({
+          where: { id: existing.id },
+          data: {
+            ...(name && { name }),
+            ...(imageUrl && { image: imageUrl }),
+          },
+        })
+      } else {
+        let handle = (name || sku).toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\p{L}\p{N}-]/gu, '') || String(Date.now())
+        const base = handle
+        let attempt = 1
+        while (await prisma.product.findUnique({ where: { siteId_handle: { siteId, handle } } })) {
+          handle = `${base}-${attempt++}`
+        }
+        await prisma.product.create({
+          data: { siteId, handle, name: name || sku, price: 0, image: imageUrl || null, payperSku: sku, active: false },
+        })
+      }
+      synced++
+    } catch (e: any) {
+      errors.push(`${sku}: ${e.message}`)
+    }
+  }
+
+  revalidatePath(`/sites/${siteId}/products`)
+  return { synced, errors }
+}
