@@ -1,0 +1,2601 @@
+swagger: '2.0'
+info:
+  version: '1.0'
+  title: "Payper APIs"
+  description: |
+    Payper APIs are used to communicate with the various capabilities of the system. For example, generate different types of documents and publish them, pull expenses, check for inventory and stock, etc.  
+    <div>All functions are accessed from <b>https://app.payper.co.il/api/...</b></div>
+
+    ### Before You Begin
+    To use the API, configure the following settings in the Payper system under **Api Settings**:  
+    <ol>
+      <li>Obtain your Company <b>api_key</b>.</li>
+      <li>Define an <b>api_user</b>.</li>
+      <li>Add your <b>IP address</b> to the allowed IPs list.</li>
+    </ol>
+
+    ### Sandbox/Tests
+    Sandbox mode (applicable only to document generation) has the following behavior:  
+    <ul>
+      <li>Documents are assigned the number '1'.</li>
+      <li>Documents will not be emailed.</li>
+    </ul>  
+    <b>Note:</b> Sandbox mode is enabled by default. When ready to generate real documents via the API, disable it in the **Api Settings**.
+host: app.payper.co.il
+basePath: /api
+schemes:
+  - https
+consumes:
+  - application/json
+produces:
+  - application/json
+tags:
+  - name: Generate documents
+    description: Create invoices, proformas, bids, receipts, credits, purchase orders, and donation receipts.
+  - name: Finance
+    description: Financial operations - expense retrieval, daily income reports, document uploads, and proforma cancellation.
+  - name: Customers
+    description: Customer lookup, details, invoice history, pricing, and general ledger.
+  - name: Inventory
+    description: Inventory management - stock levels, item details, supplier data, and purchase costs.
+security:
+  - ApiKeyAuth: []
+paths:
+  /generate_invoice:
+    x-summary: Create Invoice
+    post:
+      description: |
+        This endpoint creates an **Invoice** (חשבונית מס) in the Payper system.
+        
+        > **Customer Identification:** At least one of `customer_unique_id`, `customer_mail`,
+        > or `customer_system_id` is required. If no matching customer is found,
+        > a new one is created (requires `customer_name`).
+        
+        #### Request Parameters  
+        <table>
+          <tr><th>Attributes</th><th>Parameter</th><th>Required</th></tr>
+          <tr><td>customer_unique_id</td><td>string</td><td>Conditional*</td></tr>
+          <tr><td>customer_mail</td><td>string</td><td>Conditional*</td></tr>
+          <tr><td>customer_name</td><td>string</td><td>For new customer</td></tr>
+          <tr><td>customer_mobile</td><td>string</td><td>No</td></tr>
+          <tr><td>customer_business_phone</td><td>string</td><td>No</td></tr>
+          <tr><td>customer_address</td><td>string</td><td>No</td></tr>
+          <tr><td>document_subject</td><td>string</td><td>No</td></tr>
+          <tr><td>document_remarks</td><td>string</td><td>No</td></tr>
+          <tr><td>document_lang</td><td>enum (hb, en)</td><td>No (default: hb)</td></tr>
+          <tr><td>document_payment_due_date</td><td>date</td><td>No</td></tr>
+          <tr><td>document_no_vat</td><td>bool</td><td>No (default: false)</td></tr>
+          <tr><td>discount</td><td>float</td><td>No</td></tr>
+          <tr><td>discount_with_vat</td><td>float</td><td>No</td></tr>
+          <tr><td>document_rounded</td><td>bool</td><td>No (default: false)</td></tr>
+          <tr><td>send_by_mail</td><td>bool</td><td>No (default: false)</td></tr>
+          <tr><td>extra_recipients</td><td>string</td><td>No</td></tr>
+          <tr><td>income_id</td><td>integer</td><td>No</td></tr>
+          <tr><td>invoice_lines[]</td><td>array</td><td>Yes</td></tr>
+        </table>
+        <hr/>
+      summary: Create Invoice
+      operationId: generateInvoice
+      tags:
+        - Generate documents
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            required:
+              - customer_unique_id
+              - customer_mail
+            properties:
+              customer_unique_id:
+                type: string
+                description: The Customer business number OR Personal identity number, required if no customer_mail
+              customer_mail:
+                type: string
+                description: The Customer main email address, required if no customer_unique_id
+              customer_name:
+                type: string
+                description: The Customer full name, required for new customer
+              customer_mobile:
+                type: string
+                description: The Customer mobile phone number
+              customer_business_phone:
+                type: string
+                description: The Customer business phone number
+              customer_address:
+                type: string
+                description: The Customer full address
+              customer_city:
+                type: string
+                description: The Customer city
+              customer_home_number:
+                type: string
+                description: The Customer house/building number
+              customer_zip_code:
+                type: string
+                description: The Customer zip code
+              customer_system_id:
+                type: integer
+                description: System ID of an existing customer (alternative to customer_unique_id)
+              invoice_date:
+                type: string
+                format: date
+                description: Invoice date in YYYY-MM-DD format (default today)
+                example: "2026-03-27"
+              order_id:
+                type: string
+                description: External order reference ID for linking to source system
+              document_subject:
+                type: string
+                description: The Document subject
+              document_remarks:
+                type: string
+                description: The Document remarks
+              document_lang:
+                type: string
+                enum: ['hb', 'en']
+                default: 'hb'
+                description: The Document language options are as follows | English-en | Hebrew-hb (default)
+              document_payment_due_date:
+                type: string
+                format: 'date dd-mm-yyyy'
+                description: The Document payment due date
+              document_no_vat:
+                type: boolean
+                default: false
+                description: Don't add vat to price (default-false)
+              discount:
+                type: number
+                default: false
+                description: Document discount before vat (default-none)
+              discount_with_vat:
+                type: number
+                default: false
+                description: Document discount with vat (default-none)
+              document_rounded:
+                type: boolean
+                default: false
+                description: Rounded invoice total for payment (default-false)
+              send_by_mail:
+                type: boolean
+                default: false
+                description: Send the document by mail to the customer NOTE customer must have email address (default-false)
+              extra_recipients:
+                type: string
+                description: Add recipients to document mail comma separated (relevant if send_by_mail set to true)
+                example: "test@test.com,test2@test.com"
+              income_id:
+                type: integer
+                description: Categories the invoice with income type (For supported company only, income id can be obtained from the system settings)
+              invoice_lines:
+                type: array
+                description: Array of JSON objects - each with Item name, quantity, and price per unit before VAT
+                items:
+                  type: object
+                  required:
+                    - description
+                    - quantity
+                    - price_per_unit
+                  properties:
+                    description:
+                      type: string
+                      description: "Name of the item"
+                      example: "Office Chair"
+                    quantity:
+                      type: number
+                      description: "Quantity of the item, supports integers or decimals"
+                      example: 3
+                    price_per_unit:
+                      type: number
+                      description: "Price per unit before VAT, supports integers or decimals"
+                      example: 250.75
+                    discount:
+                      type: number
+                      description: "Per unit discount in NIS"
+                      example: 15.5
+                    include_vat:
+                      type: boolean
+                      description: "Whether VAT is included (default: false)"
+                      example: false
+                    catalog_id:
+                      type: string
+                      description: "Catalog ID of the item (default: Null)"
+                      example: "CAT12345"
+                    currency_symbol:
+                      type: string
+                      description: "Currency symbol (default: ILS)"
+                      example: "ILS"
+                    conversion_rate:
+                      type: number
+                      description: "Currency rate (default: based on the exchange rate on invoice date)"
+                      example: 3.7
+                    conversion_date:
+                      type: string
+                      format: date
+                      description: "Currency exchange date in dd-mm-yyyy format"
+                      example: "24-12-2024"
+                example:
+                  - description: "Office Chair"
+                    quantity: 3
+                    price_per_unit: 250.75
+                    discount: 15.5
+                    include_vat: false
+                    catalog_id: "CAT12345"
+                    currency_symbol: "ILS"
+                    conversion_rate: 3.7
+                    conversion_date: "24-12-2024"
+                  - description: "Desk Lamp"
+                    quantity: 2
+                    price_per_unit: 150.0
+                    include_vat: true
+                    catalog_id: "CAT67890"
+                    currency_symbol: "USD"
+                    conversion_rate: 3.9
+                    conversion_date: "25-12-2024"
+      responses:
+        200:
+          description: Request accepted and processed
+          schema:
+            type: object
+            properties:
+              result:
+                type: string
+                default: '200'
+              description:
+                type: string
+                default: "Success"
+              document_id:
+                type: string
+                description: Formatted document number (e.g. "001-2026")
+              document_system_id:
+                type: integer
+              document_link:
+                type: string
+              pay_invoice_link:
+                type: string
+        401:
+          description: Authentication failed
+          schema:
+            type: object
+            properties:
+              result:
+                type: string
+                example: "110"
+              description:
+                type: string
+                example: "Unknown credentials"
+        400:
+          description: Validation error (see result code for details)
+          schema:
+            type: object
+            properties:
+              result:
+                type: string
+                description: "Error codes: 130=customer/provider missing, 133=new customer name required, 134=not found, 142=invoice lines invalid, 143=line items invalid, 146=creation error, 147=duplicate, 167=already invoiced"
+              description:
+                type: string
+
+  /generate_proforma:
+    x-summary: Create Proforma
+    post:
+      description: |
+        This endpoint creates a **Proforma Invoice** (חשבון עסקה) in the Payper system.
+        A proforma can later be converted to an invoice or invoice-receipt using `reference_document_id`.
+        
+        #### Request Parameters  
+        <table>
+          <tr><th>Attributes</th><th>Parameter</th><th>Required</th></tr>
+          <tr><td>customer_unique_id</td><td>string</td><td>Conditional*</td></tr>
+          <tr><td>customer_mail</td><td>string</td><td>Conditional*</td></tr>
+          <tr><td>customer_name</td><td>string</td><td>For new customer</td></tr>
+          <tr><td>customer_mobile</td><td>string</td><td>No</td></tr>
+          <tr><td>customer_business_phone</td><td>string</td><td>No</td></tr>
+          <tr><td>customer_address</td><td>string</td><td>No</td></tr>
+          <tr><td>document_subject</td><td>string</td><td>No</td></tr>
+          <tr><td>document_remarks</td><td>string</td><td>No</td></tr>
+          <tr><td>document_lang</td><td>enum (hb, en)</td><td>No (default: hb)</td></tr>
+          <tr><td>document_payment_due_date</td><td>date</td><td>No</td></tr>
+          <tr><td>document_no_vat</td><td>bool</td><td>No (default: false)</td></tr>
+          <tr><td>discount</td><td>float</td><td>No</td></tr>
+          <tr><td>discount_with_vat</td><td>float</td><td>No</td></tr>
+          <tr><td>document_rounded</td><td>bool</td><td>No (default: false)</td></tr>
+          <tr><td>send_by_mail</td><td>bool</td><td>No (default: false)</td></tr>
+          <tr><td>extra_recipients</td><td>string</td><td>No</td></tr>
+          <tr><td>income_id</td><td>integer</td><td>No</td></tr>
+          <tr><td>invoice_lines[]</td><td>array</td><td>Yes</td></tr>
+        </table>
+        <hr/>
+      summary: Create Proforma
+      operationId: generateProforma
+      tags:
+        - Generate documents
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            required:
+              - customer_unique_id
+              - customer_mail
+            properties:
+              customer_unique_id:
+                type: string
+                description: The Customer business number OR Personal identity number, required if no customer_mail
+              customer_mail:
+                type: string
+                description: The Customer main email address, required if no customer_unique_id
+              customer_name:
+                type: string
+                description: The Customer full name, required for new customer
+              customer_mobile:
+                type: string
+                description: The Customer mobile phone number
+              customer_business_phone:
+                type: string
+                description: The Customer business phone number
+              customer_address:
+                type: string
+                description: The Customer full address
+              customer_city:
+                type: string
+                description: The Customer city
+              customer_home_number:
+                type: string
+                description: The Customer house/building number
+              customer_zip_code:
+                type: string
+                description: The Customer zip code
+              customer_system_id:
+                type: integer
+                description: System ID of an existing customer (alternative to customer_unique_id)
+              invoice_date:
+                type: string
+                format: date
+                description: Invoice date in YYYY-MM-DD format (default today)
+                example: "2026-03-27"
+              order_id:
+                type: string
+                description: External order reference ID for linking to source system
+              document_subject:
+                type: string
+                description: The Document subject
+              document_remarks:
+                type: string
+                description: The Document remarks
+              document_lang:
+                type: string
+                enum: ['hb', 'en']
+                default: 'hb'
+                description: The Document language options are as follows | English-en | Hebrew-hb (default)
+              document_payment_due_date:
+                type: string
+                format: 'date dd-mm-yyyy'
+                description: The Document payment due date
+              document_no_vat:
+                type: boolean
+                default: false
+                description: Don't add vat to price (default-false)
+              discount:
+                type: number
+                default: false
+                description: Document discount before vat (default-none)
+              discount_with_vat:
+                type: number
+                default: false
+                description: Document discount with vat (default-none)
+              document_rounded:
+                type: boolean
+                default: false
+                description: Rounded invoice total for payment (default-false)
+              send_by_mail:
+                type: boolean
+                default: false
+                description: Send the document by mail to the customer NOTE customer must have email address (default-false)
+              extra_recipients:
+                type: string
+                description: Add recipients to document mail comma separated (relevant if send_by_mail set to true)
+                example: "test@test.com,test2@test.com"
+              income_id:
+                type: integer
+                description: Categories the invoice with income type (For supported company only, income id can be obtained from the system settings)
+              invoice_lines:
+                type: array
+                description: Array of JSON objects - each with Item name, quantity, and price per unit before VAT
+                items:
+                  type: object
+                  required:
+                    - description
+                    - quantity
+                    - price_per_unit
+                  properties:
+                    description:
+                      type: string
+                      description: "Name of the item"
+                      example: "Office Chair"
+                    quantity:
+                      type: number
+                      description: "Quantity of the item, supports integers or decimals"
+                      example: 3
+                    price_per_unit:
+                      type: number
+                      description: "Price per unit before VAT, supports integers or decimals"
+                      example: 250.75
+                    discount:
+                      type: number
+                      description: "Per unit discount in NIS"
+                      example: 15.5
+                    include_vat:
+                      type: boolean
+                      description: "Whether VAT is included (default: false)"
+                      example: false
+                    catalog_id:
+                      type: string
+                      description: "Catalog ID of the item (default: Null)"
+                      example: "CAT12345"
+                    currency_symbol:
+                      type: string
+                      description: "Currency symbol (default: ILS)"
+                      example: "ILS"
+                    conversion_rate:
+                      type: number
+                      description: "Currency rate (default: based on the exchange rate on invoice date)"
+                      example: 3.7
+                    conversion_date:
+                      type: string
+                      format: date
+                      description: "Currency exchange date in dd-mm-yyyy format"
+                      example: "24-12-2024"
+                example:
+                  - description: "Office Chair"
+                    quantity: 3
+                    price_per_unit: 250.75
+                    discount: 15.5
+                    include_vat: false
+                    catalog_id: "CAT12345"
+                    currency_symbol: "ILS"
+                    conversion_rate: 3.7
+                    conversion_date: "24-12-2024"
+                  - description: "Desk Lamp"
+                    quantity: 2
+                    price_per_unit: 150.0
+                    include_vat: true
+                    catalog_id: "CAT67890"
+                    currency_symbol: "USD"
+                    conversion_rate: 3.9
+                    conversion_date: "25-12-2024"
+      responses:
+        200:
+          description: Request accepted and processed
+          schema:
+            type: object
+            properties:
+              result:
+                type: string
+                default: '200'
+              description:
+                type: string
+                default: "Success"
+              document_id:
+                type: string
+                description: Formatted document number (e.g. "001-2026")
+              document_system_id:
+                type: integer
+              document_link:
+                type: string
+              pay_invoice_link:
+                type: string
+        401:
+          description: Authentication failed
+          schema:
+            type: object
+            properties:
+              result:
+                type: string
+                example: "110"
+              description:
+                type: string
+                example: "Unknown credentials"
+        400:
+          description: Validation error (see result code for details)
+          schema:
+            type: object
+            properties:
+              result:
+                type: string
+                description: "Error codes: 130=customer/provider missing, 133=new customer name required, 134=not found, 142=invoice lines invalid, 143=line items invalid, 146=creation error, 147=duplicate, 167=already invoiced"
+              description:
+                type: string
+
+  /generate_bid:
+    x-summary: Create Bid
+    post:
+      description: |
+        This endpoint creates a **Price Quote / Bid** (הצעת מחיר) in the Payper system.
+        
+        #### Request Parameters  
+        <table>
+          <tr><th>Attributes</th><th>Parameter</th><th>Required</th></tr>
+          <tr><td>customer_unique_id</td><td>string</td><td>Conditional*</td></tr>
+          <tr><td>customer_mail</td><td>string</td><td>Conditional*</td></tr>
+          <tr><td>customer_name</td><td>string</td><td>For new customer</td></tr>
+          <tr><td>customer_mobile</td><td>string</td><td>No</td></tr>
+          <tr><td>customer_business_phone</td><td>string</td><td>No</td></tr>
+          <tr><td>customer_address</td><td>string</td><td>No</td></tr>
+          <tr><td>document_subject</td><td>string</td><td>No</td></tr>
+          <tr><td>document_remarks</td><td>string</td><td>No</td></tr>
+          <tr><td>document_lang</td><td>enum (hb, en)</td><td>No (default: hb)</td></tr>
+          <tr><td>document_payment_due_date</td><td>date</td><td>No</td></tr>
+          <tr><td>document_no_vat</td><td>bool</td><td>No (default: false)</td></tr>
+          <tr><td>discount</td><td>float</td><td>No</td></tr>
+          <tr><td>discount_with_vat</td><td>float</td><td>No</td></tr>
+          <tr><td>document_rounded</td><td>bool</td><td>No (default: false)</td></tr>
+          <tr><td>send_by_mail</td><td>bool</td><td>No (default: false)</td></tr>
+          <tr><td>extra_recipients</td><td>string</td><td>No</td></tr>
+          <tr><td>income_id</td><td>integer</td><td>No</td></tr>
+          <tr><td>invoice_lines[]</td><td>array</td><td>Yes</td></tr>
+        </table>
+        <hr/>
+      summary: Create Bid
+      operationId: generateBid
+      tags:
+        - Generate documents
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            required:
+              - customer_unique_id
+              - customer_mail
+            properties:
+              customer_unique_id:
+                type: string
+                description: The Customer business number OR Personal identity number, required if no customer_mail
+              customer_mail:
+                type: string
+                description: The Customer main email address, required if no customer_unique_id
+              customer_name:
+                type: string
+                description: The Customer full name, required for new customer
+              customer_mobile:
+                type: string
+                description: The Customer mobile phone number
+              customer_business_phone:
+                type: string
+                description: The Customer business phone number
+              customer_address:
+                type: string
+                description: The Customer full address
+              customer_city:
+                type: string
+                description: The Customer city
+              customer_home_number:
+                type: string
+                description: The Customer house/building number
+              customer_zip_code:
+                type: string
+                description: The Customer zip code
+              customer_system_id:
+                type: integer
+                description: System ID of an existing customer (alternative to customer_unique_id)
+              invoice_date:
+                type: string
+                format: date
+                description: Invoice date in YYYY-MM-DD format (default today)
+                example: "2026-03-27"
+              order_id:
+                type: string
+                description: External order reference ID for linking to source system
+              document_subject:
+                type: string
+                description: The Document subject
+              document_remarks:
+                type: string
+                description: The Document remarks
+              document_lang:
+                type: string
+                enum: ['hb', 'en']
+                default: 'hb'
+                description: The Document language options are as follows | English-en | Hebrew-hb (default)
+              document_payment_due_date:
+                type: string
+                format: 'date dd-mm-yyyy'
+                description: The Document payment due date
+              document_no_vat:
+                type: boolean
+                default: false
+                description: Don't add vat to price (default-false)
+              discount:
+                type: number
+                default: false
+                description: Document discount before vat (default-none)
+              discount_with_vat:
+                type: number
+                default: false
+                description: Document discount with vat (default-none)
+              document_rounded:
+                type: boolean
+                default: false
+                description: Rounded invoice total for payment (default-false)
+              send_by_mail:
+                type: boolean
+                default: false
+                description: Send the document by mail to the customer NOTE customer must have email address (default-false)
+              extra_recipients:
+                type: string
+                description: Add recipients to document mail comma separated (relevant if send_by_mail set to true)
+                example: "test@test.com,test2@test.com"
+              income_id:
+                type: integer
+                description: Categories the invoice with income type (For supported company only, income id can be obtained from the system settings)
+              invoice_lines:
+                type: array
+                description: Array of JSON objects - each with Item name, quantity, and price per unit before VAT
+                items:
+                  type: object
+                  required:
+                    - description
+                    - quantity
+                    - price_per_unit
+                  properties:
+                    description:
+                      type: string
+                      description: "Name of the item"
+                      example: "Office Chair"
+                    quantity:
+                      type: number
+                      description: "Quantity of the item, supports integers or decimals"
+                      example: 3
+                    price_per_unit:
+                      type: number
+                      description: "Price per unit before VAT, supports integers or decimals"
+                      example: 250.75
+                    discount:
+                      type: number
+                      description: "Per unit discount in NIS"
+                      example: 15.5
+                    include_vat:
+                      type: boolean
+                      description: "Whether VAT is included (default: false)"
+                      example: false
+                    catalog_id:
+                      type: string
+                      description: "Catalog ID of the item (default: Null)"
+                      example: "CAT12345"
+                    currency_symbol:
+                      type: string
+                      description: "Currency symbol (default: ILS)"
+                      example: "ILS"
+                    conversion_rate:
+                      type: number
+                      description: "Currency rate (default: based on the exchange rate on invoice date)"
+                      example: 3.7
+                    conversion_date:
+                      type: string
+                      format: date
+                      description: "Currency exchange date in dd-mm-yyyy format"
+                      example: "24-12-2024"
+                example:
+                  - description: "Office Chair"
+                    quantity: 3
+                    price_per_unit: 250.75
+                    discount: 15.5
+                    include_vat: false
+                    catalog_id: "CAT12345"
+                    currency_symbol: "ILS"
+                    conversion_rate: 3.7
+                    conversion_date: "24-12-2024"
+                  - description: "Desk Lamp"
+                    quantity: 2
+                    price_per_unit: 150.0
+                    include_vat: true
+                    catalog_id: "CAT67890"
+                    currency_symbol: "USD"
+                    conversion_rate: 3.9
+                    conversion_date: "25-12-2024"
+      responses:
+        200:
+          description: Request accepted and processed
+          schema:
+            type: object
+            properties:
+              result:
+                type: string
+                default: '200'
+              description:
+                type: string
+                default: "Success"
+              document_id:
+                type: string
+                description: Formatted document number (e.g. "001-2026")
+              document_system_id:
+                type: integer
+              document_link:
+                type: string
+        401:
+          description: Authentication failed
+          schema:
+            type: object
+            properties:
+              result:
+                type: string
+                example: "110"
+              description:
+                type: string
+                example: "Unknown credentials"
+        400:
+          description: Validation error (see result code for details)
+          schema:
+            type: object
+            properties:
+              result:
+                type: string
+                description: "Error codes: 130=customer/provider missing, 133=new customer name required, 134=not found, 142=invoice lines invalid, 143=line items invalid, 146=creation error, 147=duplicate, 167=already invoiced"
+              description:
+                type: string
+
+  /generate_receipt:
+    x-summary: Create Receipt
+    post:
+      description: |
+        This endpoint creates a **Receipt** (קבלה) in the Payper system.
+        Receipts require both `invoice_lines` and `receipt_lines` (payment details).
+        
+        #### Request Parameters  
+        <table>
+          <tr><th>Attributes</th><th>Parameter</th><th>Required</th></tr>
+          <tr><td>customer_unique_id</td><td>string</td><td>Conditional*</td></tr>
+          <tr><td>customer_mail</td><td>string</td><td>Conditional*</td></tr>
+          <tr><td>customer_name</td><td>string</td><td>For new customer</td></tr>
+          <tr><td>customer_mobile</td><td>string</td><td>No</td></tr>
+          <tr><td>customer_business_phone</td><td>string</td><td>No</td></tr>
+          <tr><td>customer_address</td><td>string</td><td>No</td></tr>
+          <tr><td>document_subject</td><td>string</td><td>No</td></tr>
+          <tr><td>document_remarks</td><td>string</td><td>No</td></tr>
+          <tr><td>document_lang</td><td>enum (hb, en)</td><td>No (default: hb)</td></tr>
+          <tr><td>reference_document_id</td><td>integer</td><td>No</td></tr>
+          <tr><td>send_by_mail</td><td>bool</td><td>No (default: false)</td></tr>
+          <tr><td>extra_recipients</td><td>string</td><td>No</td></tr>
+          <tr><td>income_id</td><td>integer</td><td>No</td></tr>
+          <tr><td>receipt_lines[]</td><td>array</td><td>Yes (receipts only)</td></tr>
+        </table>
+        <hr/>
+      summary: Create Receipt
+      operationId: generateReceipt
+      tags:
+        - Generate documents
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            required:
+              - customer_unique_id
+              - customer_mail
+            properties:
+              customer_unique_id:
+                type: string
+                description: The Customer business number OR Personal identity number, required if no customer_mail
+              customer_mail:
+                type: string
+                description: The Customer main email address, required if no customer_unique_id
+              customer_name:
+                type: string
+                description: The Customer full name, required for new customer
+              customer_mobile:
+                type: string
+                description: The Customer mobile phone number
+              customer_business_phone:
+                type: string
+                description: The Customer business phone number
+              customer_address:
+                type: string
+                description: The Customer full address
+              customer_city:
+                type: string
+                description: The Customer city
+              customer_home_number:
+                type: string
+                description: The Customer house/building number
+              customer_zip_code:
+                type: string
+                description: The Customer zip code
+              customer_system_id:
+                type: integer
+                description: System ID of an existing customer (alternative to customer_unique_id)
+              invoice_date:
+                type: string
+                format: date
+                description: Invoice date in YYYY-MM-DD format (default today)
+                example: "2026-03-27"
+              order_id:
+                type: string
+                description: External order reference ID for linking to source system
+              document_subject:
+                type: string
+                description: The Document subject
+              document_remarks:
+                type: string
+                description: The Document remarks
+              document_lang:
+                type: string
+                enum: ['hb', 'en']
+                default: 'hb'
+                description: The Document language options are as follows | English-en | Hebrew-hb (default)
+              reference_document_id:
+                type: integer
+                description: System id of Proforma OR Invoice to close
+              send_by_mail:
+                type: boolean
+                default: false
+                description: Send the document by mail to the customer NOTE customer must have email address (default-false)
+              extra_recipients:
+                type: string
+                description: Add recipients to document mail comma separated (relevant if send_by_mail set to true)
+                example: "test@test.com,test2@test.com"
+              income_id:
+                type: integer
+                description: Categories the invoice with income type (For supported company only, income id can be obtained from the system settings)
+              receipt_lines:
+                type: array
+                description: Array of JSON objects - each with payment type, date, and amount
+                items:
+                  type: object
+                  required:
+                    - payment_type
+                    - date
+                    - amount
+                    - bank_name  # Added as required for Cheque
+                    - branch_num  # Added as required for Cheque
+                    - account_num  # Added as required for Cheque
+                    - cheque_num  # Added as required for Cheque
+                  properties:
+                    payment_type:
+                      type: string
+                      enum: [Cash, Cc, Cheque, Bank_Transfer, Paypal, Bit, Paybox]
+                      description: "Type of payment method"
+                    date:
+                      type: string
+                      format: date
+                      example: "24-12-2024"
+                      description: "Payment date in dd-mm-yyyy format"
+                    amount:
+                      type: number
+                      description: "Payment amount, supports integers and decimals"
+                      example: 150.75
+                    bank_name:
+                      type: string
+                      description: "Bank name or number, required for payment_type='Cheque'"
+                      example: "Bank Hapoalim"
+                    branch_num:
+                      type: string
+                      description: "Branch number, required for payment_type='Cheque'"
+                      example: "123"
+                    account_num:
+                      type: string
+                      description: "Account number, required for payment_type='Cheque'"
+                      example: "456789"
+                    cheque_num:
+                      type: string
+                      description: "Cheque number, required for payment_type='Cheque'"
+                      example: "00012345"
+                    currency_symbol:
+                      type: string
+                      description: "Currency symbol (default ILS)"
+                      example: "ILS"
+                    conversion_rate:
+                      type: number
+                      description: "Currency exchange rate (default by exchange rate on payment date or on conversion_date if provided)"
+                      example: 3.5
+                    conversion_date:
+                      type: string
+                      format: date
+                      description: "Currency exchange date in dd-mm-yyyy format"
+                      example: "24-12-2024"
+                    cc_validity:
+                      type: string
+                      pattern: "^(0[1-9]|1[0-2])/[0-9]{4}$"
+                      description: "Credit card validity in MM/YYYY format, required for payment_type='CC'"
+                      example: "12/2025"
+                    cc_type:
+                      type: integer
+                      enum: [0, 1, 2, 3, 4, 5, 6]
+                      description: "Credit card type (0-Unknown, 1-Isracard, 2-Visa, 3-MasterCard, 4-American Express, 5-Diners, 6-Maestro)"
+                      example: 1
+                    proof_number:
+                      type: string
+                      description: "Proof number for payment_type='CC'"
+                      example: "123456789"
+                example:
+                  - payment_type: "Cc"
+                    date: "24-12-2024"
+                    amount: 150.75
+                    currency_symbol: "ILS"
+                    conversion_rate: 3.5
+                    conversion_date: "24-12-2024"
+                    cc_validity: "12/2025"
+                    cc_type: 1
+                    proof_number: "123456789"
+                  - payment_type: "Cheque"
+                    date: "24-12-2024"
+                    amount: 150.75
+                    bank_name: "99"
+                    branch_num: "123"
+                    account_num: "456789"
+                    cheque_num: "00012345"
+                    currency_symbol: "ILS"
+                  - payment_type: "Cash"
+                    date: "25-12-2024"
+                    amount: 200
+                    currency_symbol: "ILS"
+      responses:
+        200:
+          description: Request accepted and processed
+          schema:
+            type: object
+            properties:
+              result:
+                type: string
+                default: '200'
+              description:
+                type: string
+                default: "Success"
+              document_id:
+                type: string
+                description: Formatted document number (e.g. "001-2026")
+              document_system_id:
+                type: integer
+              document_link:
+                type: string
+        401:
+          description: Authentication failed
+          schema:
+            type: object
+            properties:
+              result:
+                type: string
+                example: "110"
+              description:
+                type: string
+                example: "Unknown credentials"
+        400:
+          description: Validation error (see result code for details)
+          schema:
+            type: object
+            properties:
+              result:
+                type: string
+                description: "Error codes: 130=customer/provider missing, 133=new customer name required, 134=not found, 142=invoice lines invalid, 143=line items invalid, 146=creation error, 147=duplicate, 167=already invoiced"
+              description:
+                type: string
+
+  /generate_invoice_receipt:
+    x-summary: Create Invoice-Receipt
+    post:
+      description: |
+        This endpoint creates an **Invoice-Receipt** (חשבונית מס / קבלה) in the Payper system.
+        This combines an invoice and receipt into a single document. Requires both `invoice_lines`
+        and `receipt_lines`.
+        
+        #### Request Parameters  
+        <table>
+          <tr><th>Attributes</th><th>Parameter</th><th>Required</th></tr>
+          <tr><td>customer_unique_id</td><td>string</td><td>Conditional*</td></tr>
+          <tr><td>customer_mail</td><td>string</td><td>Conditional*</td></tr>
+          <tr><td>customer_name</td><td>string</td><td>For new customer</td></tr>
+          <tr><td>customer_mobile</td><td>string</td><td>No</td></tr>
+          <tr><td>customer_business_phone</td><td>string</td><td>No</td></tr>
+          <tr><td>customer_address</td><td>string</td><td>No</td></tr>
+          <tr><td>document_subject</td><td>string</td><td>No</td></tr>
+          <tr><td>document_remarks</td><td>string</td><td>No</td></tr>
+          <tr><td>document_lang</td><td>enum (hb, en)</td><td>No (default: hb)</td></tr>
+          <tr><td>reference_document_id</td><td>integer</td><td>No</td></tr>
+          <tr><td>document_no_vat</td><td>bool</td><td>No (default: false)</td></tr>
+          <tr><td>discount</td><td>float</td><td>No</td></tr>
+          <tr><td>discount_with_vat</td><td>float</td><td>No</td></tr>
+          <tr><td>document_rounded</td><td>bool</td><td>No (default: false)</td></tr>
+          <tr><td>send_by_mail</td><td>bool</td><td>No (default: false)</td></tr>
+          <tr><td>extra_recipients</td><td>string</td><td>No</td></tr>
+          <tr><td>income_id</td><td>integer</td><td>No</td></tr>
+          <tr><td>invoice_lines[]</td><td>array</td><td>Yes</td></tr>
+          <tr><td>receipt_lines[]</td><td>array</td><td>Yes (receipts only)</td></tr>
+        </table>
+        <hr/>
+      summary: Create Invoice-Receipt
+      operationId: generateInvoiceReceipt
+      tags:
+        - Generate documents
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            required:
+              - customer_unique_id
+              - customer_mail
+            properties:
+              customer_unique_id:
+                type: string
+                description: The Customer business number OR Personal identity number, required if no customer_mail
+              customer_mail:
+                type: string
+                description: The Customer main email address, required if no customer_unique_id
+              customer_name:
+                type: string
+                description: The Customer full name, required for new customer
+              customer_mobile:
+                type: string
+                description: The Customer mobile phone number
+              customer_business_phone:
+                type: string
+                description: The Customer business phone number
+              customer_address:
+                type: string
+                description: The Customer full address
+              customer_city:
+                type: string
+                description: The Customer city
+              customer_home_number:
+                type: string
+                description: The Customer house/building number
+              customer_zip_code:
+                type: string
+                description: The Customer zip code
+              customer_system_id:
+                type: integer
+                description: System ID of an existing customer (alternative to customer_unique_id)
+              invoice_date:
+                type: string
+                format: date
+                description: Invoice date in YYYY-MM-DD format (default today)
+                example: "2026-03-27"
+              order_id:
+                type: string
+                description: External order reference ID for linking to source system
+              document_subject:
+                type: string
+                description: The Document subject
+              document_remarks:
+                type: string
+                description: The Document remarks
+              document_lang:
+                type: string
+                enum: ['hb', 'en']
+                default: 'hb'
+                description: The Document language options are as follows | English-en | Hebrew-hb (default)
+              reference_document_id:
+                type: integer
+                description: System id of Proforma (Only) to close, in this case no invoice lines needed
+              document_no_vat:
+                type: boolean
+                default: false
+                description: Don't add vat to price (default-false)
+              discount:
+                type: number
+                default: false
+                description: Document discount before vat (default-none)
+              discount_with_vat:
+                type: number
+                default: false
+                description: Document discount with vat (default-none)
+              document_rounded:
+                type: boolean
+                default: false
+                description: Rounded invoice total for payment (default-false)
+              send_by_mail:
+                type: boolean
+                default: false
+                description: Send the document by mail to the customer NOTE customer must have email address (default-false)
+              extra_recipients:
+                type: string
+                description: Add recipients to document mail comma separated (relevant if send_by_mail set to true)
+                example: "test@test.com,test2@test.com"
+              income_id:
+                type: integer
+                description: Categories the invoice with income type (For supported company only, income id can be obtained from the system settings)
+              invoice_lines:
+                type: array
+                description: Array of JSON objects - each with Item name, quantity, and price per unit before VAT
+                items:
+                  type: object
+                  required:
+                    - description
+                    - quantity
+                    - price_per_unit
+                  properties:
+                    description:
+                      type: string
+                      description: "Name of the item"
+                      example: "Office Chair"
+                    quantity:
+                      type: number
+                      description: "Quantity of the item, supports integers or decimals"
+                      example: 3
+                    price_per_unit:
+                      type: number
+                      description: "Price per unit before VAT, supports integers or decimals"
+                      example: 250.75
+                    discount:
+                      type: number
+                      description: "Per unit discount in NIS"
+                      example: 15.5
+                    include_vat:
+                      type: boolean
+                      description: "Whether VAT is included (default: false)"
+                      example: false
+                    catalog_id:
+                      type: string
+                      description: "Catalog ID of the item (default: Null)"
+                      example: "CAT12345"
+                    currency_symbol:
+                      type: string
+                      description: "Currency symbol (default: ILS)"
+                      example: "ILS"
+                    conversion_rate:
+                      type: number
+                      description: "Currency rate (default: based on the exchange rate on invoice date)"
+                      example: 3.7
+                    conversion_date:
+                      type: string
+                      format: date
+                      description: "Currency exchange date in dd-mm-yyyy format"
+                      example: "24-12-2024"
+                example:
+                  - description: "Office Chair"
+                    quantity: 3
+                    price_per_unit: 250.75
+                    discount: 15.5
+                    include_vat: false
+                    catalog_id: "CAT12345"
+                    currency_symbol: "ILS"
+                    conversion_rate: 3.7
+                    conversion_date: "24-12-2024"
+                  - description: "Desk Lamp"
+                    quantity: 2
+                    price_per_unit: 150.0
+                    include_vat: true
+                    catalog_id: "CAT67890"
+                    currency_symbol: "USD"
+                    conversion_rate: 3.9
+                    conversion_date: "25-12-2024"
+              receipt_lines:
+                type: array
+                description: Array of JSON objects - each with payment type, date, and amount
+                items:
+                  type: object
+                  required:
+                    - payment_type
+                    - date
+                    - amount
+                    - bank_name  # Added as required for Cheque
+                    - branch_num  # Added as required for Cheque
+                    - account_num  # Added as required for Cheque
+                    - cheque_num  # Added as required for Cheque
+                  properties:
+                    payment_type:
+                      type: string
+                      enum: [Cash, Cc, Cheque, Bank_Transfer, Paypal, Bit, Paybox]
+                      description: "Type of payment method"
+                    date:
+                      type: string
+                      format: date
+                      example: "24-12-2024"
+                      description: "Payment date in dd-mm-yyyy format"
+                    amount:
+                      type: number
+                      description: "Payment amount, supports integers and decimals"
+                      example: 150.75
+                    bank_name:
+                      type: string
+                      description: "Bank name or number, required for payment_type='Cheque'"
+                      example: "Bank Hapoalim"
+                    branch_num:
+                      type: string
+                      description: "Branch number, required for payment_type='Cheque'"
+                      example: "123"
+                    account_num:
+                      type: string
+                      description: "Account number, required for payment_type='Cheque'"
+                      example: "456789"
+                    cheque_num:
+                      type: string
+                      description: "Cheque number, required for payment_type='Cheque'"
+                      example: "00012345"
+                    currency_symbol:
+                      type: string
+                      description: "Currency symbol (default ILS)"
+                      example: "ILS"
+                    conversion_rate:
+                      type: number
+                      description: "Currency exchange rate (default by exchange rate on payment date or on conversion_date if provided)"
+                      example: 3.5
+                    conversion_date:
+                      type: string
+                      format: date
+                      description: "Currency exchange date in dd-mm-yyyy format"
+                      example: "24-12-2024"
+                    cc_validity:
+                      type: string
+                      pattern: "^(0[1-9]|1[0-2])/[0-9]{4}$"
+                      description: "Credit card validity in MM/YYYY format, required for payment_type='CC'"
+                      example: "12/2025"
+                    cc_type:
+                      type: integer
+                      enum: [0, 1, 2, 3, 4, 5, 6]
+                      description: "Credit card type (0-Unknown, 1-Isracard, 2-Visa, 3-MasterCard, 4-American Express, 5-Diners, 6-Maestro)"
+                      example: 1
+                    proof_number:
+                      type: string
+                      description: "Proof number for payment_type='CC'"
+                      example: "123456789"
+                example:
+                  - payment_type: "Cc"
+                    date: "24-12-2024"
+                    amount: 150.75
+                    currency_symbol: "ILS"
+                    conversion_rate: 3.5
+                    conversion_date: "24-12-2024"
+                    cc_validity: "12/2025"
+                    cc_type: 1
+                    proof_number: "123456789"
+                  - payment_type: "Cheque"
+                    date: "24-12-2024"
+                    amount: 150.75
+                    bank_name: "99"
+                    branch_num: "123"
+                    account_num: "456789"
+                    cheque_num: "00012345"
+                    currency_symbol: "ILS"
+                  - payment_type: "Cash"
+                    date: "25-12-2024"
+                    amount: 200
+                    currency_symbol: "ILS"
+      responses:
+        200:
+          description: Request accepted and processed
+          schema:
+            type: object
+            properties:
+              result:
+                type: string
+                default: '200'
+              description:
+                type: string
+                default: "Success"
+              document_id:
+                type: string
+                description: Formatted document number (e.g. "001-2026")
+              document_system_id:
+                type: integer
+              document_link:
+                type: string
+        401:
+          description: Authentication failed
+          schema:
+            type: object
+            properties:
+              result:
+                type: string
+                example: "110"
+              description:
+                type: string
+                example: "Unknown credentials"
+        400:
+          description: Validation error (see result code for details)
+          schema:
+            type: object
+            properties:
+              result:
+                type: string
+                description: "Error codes: 130=customer/provider missing, 133=new customer name required, 134=not found, 142=invoice lines invalid, 143=line items invalid, 146=creation error, 147=duplicate, 167=already invoiced"
+              description:
+                type: string
+
+  /generate_credit:
+    x-summary: Create Credit
+    post:
+      description: |
+        This endpoint creates a **Credit Note** (חשבונית זיכוי) in the Payper system.
+        Use `reference_document_id` to link the credit to the original invoice.
+        
+        #### Request Parameters  
+        <table>
+          <tr><th>Attributes</th><th>Parameter</th><th>Required</th></tr>
+          <tr><td>customer_unique_id</td><td>string</td><td>Conditional*</td></tr>
+          <tr><td>customer_mail</td><td>string</td><td>Conditional*</td></tr>
+          <tr><td>customer_name</td><td>string</td><td>For new customer</td></tr>
+          <tr><td>customer_mobile</td><td>string</td><td>No</td></tr>
+          <tr><td>customer_business_phone</td><td>string</td><td>No</td></tr>
+          <tr><td>customer_address</td><td>string</td><td>No</td></tr>
+          <tr><td>document_subject</td><td>string</td><td>No</td></tr>
+          <tr><td>document_remarks</td><td>string</td><td>No</td></tr>
+          <tr><td>document_lang</td><td>enum (hb, en)</td><td>No (default: hb)</td></tr>
+          <tr><td>reference_document_id</td><td>integer</td><td>No</td></tr>
+          <tr><td>document_no_vat</td><td>bool</td><td>No (default: false)</td></tr>
+          <tr><td>discount</td><td>float</td><td>No</td></tr>
+          <tr><td>discount_with_vat</td><td>float</td><td>No</td></tr>
+          <tr><td>document_rounded</td><td>bool</td><td>No (default: false)</td></tr>
+          <tr><td>send_by_mail</td><td>bool</td><td>No (default: false)</td></tr>
+          <tr><td>extra_recipients</td><td>string</td><td>No</td></tr>
+          <tr><td>income_id</td><td>integer</td><td>No</td></tr>
+          <tr><td>invoice_lines[]</td><td>array</td><td>Yes</td></tr>
+        </table>
+        <hr/>
+      summary: Create Credit
+      operationId: generateCredit
+      tags:
+        - Generate documents
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            required:
+              - customer_unique_id
+              - customer_mail
+            properties:
+              customer_unique_id:
+                type: string
+                description: The Customer business number OR Personal identity number, required if no customer_mail
+              customer_mail:
+                type: string
+                description: The Customer main email address, required if no customer_unique_id
+              customer_name:
+                type: string
+                description: The Customer full name, required for new customer
+              customer_mobile:
+                type: string
+                description: The Customer mobile phone number
+              customer_business_phone:
+                type: string
+                description: The Customer business phone number
+              customer_address:
+                type: string
+                description: The Customer full address
+              customer_city:
+                type: string
+                description: The Customer city
+              customer_home_number:
+                type: string
+                description: The Customer house/building number
+              customer_zip_code:
+                type: string
+                description: The Customer zip code
+              customer_system_id:
+                type: integer
+                description: System ID of an existing customer (alternative to customer_unique_id)
+              invoice_date:
+                type: string
+                format: date
+                description: Invoice date in YYYY-MM-DD format (default today)
+                example: "2026-03-27"
+              order_id:
+                type: string
+                description: External order reference ID for linking to source system
+              document_subject:
+                type: string
+                description: The Document subject
+              document_remarks:
+                type: string
+                description: The Document remarks
+              document_lang:
+                type: string
+                enum: ['hb', 'en']
+                default: 'hb'
+                description: The Document language options are as follows | English-en | Hebrew-hb (default)
+              reference_document_id:
+                type: integer
+                description: System id of Invoice OR Invoice-Receipt (Only) to close, in this case no reference document lines needed
+              document_no_vat:
+                type: boolean
+                default: false
+                description: Don't add vat to price (default-false)
+              discount:
+                type: number
+                default: false
+                description: Document discount before vat (default-none)
+              discount_with_vat:
+                type: number
+                default: false
+                description: Document discount with vat (default-none)
+              document_rounded:
+                type: boolean
+                default: false
+                description: Rounded invoice total for payment (default-false)
+              send_by_mail:
+                type: boolean
+                default: false
+                description: Send the document by mail to the customer NOTE customer must have email address (default-false)
+              extra_recipients:
+                type: string
+                description: Add recipients to document mail comma separated (relevant if send_by_mail set to true)
+                example: "test@test.com,test2@test.com"
+              income_id:
+                type: integer
+                description: Categories the invoice with income type (For supported company only, income id can be obtained from the system settings)
+              invoice_lines:
+                type: array
+                description: Array of JSON objects - each with Item name, quantity, and price per unit before VAT
+                items:
+                  type: object
+                  required:
+                    - description
+                    - quantity
+                    - price_per_unit
+                  properties:
+                    description:
+                      type: string
+                      description: "Name of the item"
+                      example: "Office Chair"
+                    quantity:
+                      type: number
+                      description: "Quantity of the item, supports integers or decimals"
+                      example: 3
+                    price_per_unit:
+                      type: number
+                      description: "Price per unit before VAT, supports integers or decimals"
+                      example: 250.75
+                    discount:
+                      type: number
+                      description: "Per unit discount in NIS"
+                      example: 15.5
+                    include_vat:
+                      type: boolean
+                      description: "Whether VAT is included (default: false)"
+                      example: false
+                    catalog_id:
+                      type: string
+                      description: "Catalog ID of the item (default: Null)"
+                      example: "CAT12345"
+                    currency_symbol:
+                      type: string
+                      description: "Currency symbol (default: ILS)"
+                      example: "ILS"
+                    conversion_rate:
+                      type: number
+                      description: "Currency rate (default: based on the exchange rate on invoice date)"
+                      example: 3.7
+                    conversion_date:
+                      type: string
+                      format: date
+                      description: "Currency exchange date in dd-mm-yyyy format"
+                      example: "24-12-2024"
+                example:
+                  - description: "Office Chair"
+                    quantity: 3
+                    price_per_unit: 250.75
+                    discount: 15.5
+                    include_vat: false
+                    catalog_id: "CAT12345"
+                    currency_symbol: "ILS"
+                    conversion_rate: 3.7
+                    conversion_date: "24-12-2024"
+                  - description: "Desk Lamp"
+                    quantity: 2
+                    price_per_unit: 150.0
+                    include_vat: true
+                    catalog_id: "CAT67890"
+                    currency_symbol: "USD"
+                    conversion_rate: 3.9
+                    conversion_date: "25-12-2024"
+      responses:
+        200:
+          description: Request accepted and processed
+          schema:
+            type: object
+            properties:
+              result:
+                type: string
+                default: '200'
+              description:
+                type: string
+                default: "Success"
+              document_id:
+                type: string
+                description: Formatted document number (e.g. "001-2026")
+              document_system_id:
+                type: integer
+              document_link:
+                type: string
+        401:
+          description: Authentication failed
+          schema:
+            type: object
+            properties:
+              result:
+                type: string
+                example: "110"
+              description:
+                type: string
+                example: "Unknown credentials"
+        400:
+          description: Validation error (see result code for details)
+          schema:
+            type: object
+            properties:
+              result:
+                type: string
+                description: "Error codes: 130=customer/provider missing, 133=new customer name required, 134=not found, 142=invoice lines invalid, 143=line items invalid, 146=creation error, 147=duplicate, 167=already invoiced"
+              description:
+                type: string
+
+  /generate_purchase_order:
+    x-summary: Create Purchase Order
+    post:
+      description: |
+        This endpoint creates a Purchase Order (PO) in the Payper system.
+        #### Provider Identification
+        At least one of the following must be provided to identify the provider:
+        - `provider_system_id` - Existing provider ID in the system
+        - `provider_business_num` - Provider tax ID for lookup or creation
+        - `provider_name` + `provider_business_num` - Required together to create a new provider
+        
+        #### Request Parameters  
+        <table>
+          <tr><th>Attributes</th><th>Parameter</th><th>Required</th></tr>
+          <tr><td>provider_system_id</td><td>integer</td><td>One of provider identifiers required</td></tr>
+          <tr><td>provider_business_num</td><td>string</td><td>Required for new provider</td></tr>
+          <tr><td>provider_name</td><td>string</td><td>Required for new provider</td></tr>
+          <tr><td>provider_email</td><td>string</td><td>No</td></tr>
+          <tr><td>provider_mobile</td><td>string</td><td>No</td></tr>
+          <tr><td>provider_business_phone</td><td>string</td><td>No</td></tr>
+          <tr><td>po_contact_name</td><td>string</td><td>No</td></tr>
+          <tr><td>po_contact_phone</td><td>string</td><td>No</td></tr>
+          <tr><td>po_contact_email</td><td>string</td><td>No</td></tr>
+          <tr><td>po_contact_pid</td><td>string</td><td>No</td></tr>
+          <tr><td>document_lang</td><td>enum (hb, en)</td><td>No (default: hb)</td></tr>
+          <tr><td>document_remarks</td><td>string</td><td>No</td></tr>
+          <tr><td>document_subject</td><td>string</td><td>No</td></tr>
+          <tr><td>document_payment_due_date</td><td>date</td><td>No</td></tr>
+          <tr><td>document_no_vat</td><td>bool</td><td>No (default: false)</td></tr>
+          <tr><td>document_rounded</td><td>bool</td><td>No (default: false)</td></tr>
+          <tr><td>discount</td><td>float</td><td>No (before vat)</td></tr>
+          <tr><td>discount_with_vat</td><td>float</td><td>No</td></tr>
+          <tr><td>order_id</td><td>string</td><td>No (external order reference)</td></tr>
+          <tr><td>send_by_mail</td><td>bool</td><td>No (default: false)</td></tr>
+          <tr><td>extra_recipients</td><td>string</td><td>No (comma-separated emails)</td></tr>
+          <tr><td>invoice_lines</td><td>array</td><td>Yes</td></tr>
+        </table>
+        
+        #### Invoice Lines Parameters  
+        <table>
+          <tr><th>Attributes</th><th>Parameter</th><th>Required</th></tr>
+          <tr><td>description</td><td>string</td><td>Yes</td></tr>
+          <tr><td>price_per_unit</td><td>float</td><td>Yes</td></tr>
+          <tr><td>quantity</td><td>float</td><td>No (default: 1)</td></tr>
+          <tr><td>no_vat</td><td>bool</td><td>No</td></tr>
+          <tr><td>include_vat</td><td>bool</td><td>No</td></tr>
+          <tr><td>discount</td><td>float</td><td>No (in NIS)</td></tr>
+          <tr><td>discount_with_vat</td><td>float</td><td>No</td></tr>
+          <tr><td>catalog_id</td><td>string</td><td>No (makat of catalog item)</td></tr>
+          <tr><td>currency_symbol</td><td>string</td><td>No (ILS, USD, EUR)</td></tr>
+          <tr><td>conversion_rate</td><td>float</td><td>No</td></tr>
+          <tr><td>conversion_date</td><td>date</td><td>No (dd-mm-yyyy)</td></tr>
+          <tr><td>supply_date</td><td>date</td><td>No (expected delivery date)</td></tr>
+        </table>
+      tags:
+        - Generate documents
+      consumes:
+        - application/json
+      parameters:
+        - name: API_KEY
+          in: header
+          required: true
+          type: string
+          description: Company API key
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            required:
+              - api_user
+              - invoice_lines
+            properties:
+              api_user:
+                type: string
+                description: The email defined as the api_user in the Api Settings
+              provider_system_id:
+                type: integer
+                description: System ID of an existing provider
+              provider_business_num:
+                type: string
+                description: Provider tax ID (business number) for lookup or new provider creation
+              provider_name:
+                type: string
+                description: Provider name (required when creating a new provider)
+              provider_email:
+                type: string
+                description: Provider email address
+              provider_mobile:
+                type: string
+                description: Provider mobile phone
+              provider_business_phone:
+                type: string
+                description: Provider business phone
+              po_contact_name:
+                type: string
+                description: PO contact person name
+              po_contact_phone:
+                type: string
+                description: PO contact person phone
+              po_contact_email:
+                type: string
+                description: PO contact person email
+              po_contact_pid:
+                type: string
+                description: PO contact person ID number
+              document_lang:
+                type: string
+                enum: [hb, en]
+                default: hb
+                description: Document language (hb=Hebrew, en=English)
+              document_remarks:
+                type: string
+                description: Document remarks
+              document_subject:
+                type: string
+                description: Document subject line
+              document_payment_due_date:
+                type: string
+                format: date
+                description: Payment due date
+              invoice_date:
+                type: string
+                format: date
+                description: Invoice date (default today)
+              document_no_vat:
+                type: boolean
+                default: false
+                description: No VAT on document (default false)
+              discount:
+                type: number
+                description: Document discount before VAT in NIS
+              discount_with_vat:
+                type: number
+                description: Document discount including VAT in NIS
+              order_id:
+                type: string
+                description: External order reference ID
+              send_by_mail:
+                type: boolean
+                default: false
+                description: Send document by email to the provider (default false)
+              extra_recipients:
+                type: string
+                description: Comma-separated list of additional email recipients
+              invoice_lines:
+                type: array
+                description: List of order line items (at least one required)
+                items:
+                  type: object
+                  required:
+                    - description
+                    - price_per_unit
+                  properties:
+                    description:
+                      type: string
+                      description: Line item description
+                      example: "Office Chair"
+                    price_per_unit:
+                      type: number
+                      description: Price per unit (required, must be numeric)
+                      example: 250.75
+                    quantity:
+                      type: number
+                      description: "Quantity (default: 1)"
+                      example: 10
+                    no_vat:
+                      type: boolean
+                      description: "No VAT on this line (default: false)"
+                    include_vat:
+                      type: boolean
+                      description: "Price includes VAT (default: false)"
+                    discount:
+                      type: number
+                      description: "Line discount in NIS"
+                      example: 15.5
+                    discount_with_vat:
+                      type: number
+                      description: "Line discount including VAT in NIS"
+                    catalog_id:
+                      type: string
+                      description: "Catalog item ID (makat) to link this line to a product"
+                      example: "SKU12345"
+                    currency_symbol:
+                      type: string
+                      description: "Currency symbol (default: ILS)"
+                      example: "USD"
+                    conversion_rate:
+                      type: number
+                      description: "Currency exchange rate (default: exchange rate on invoice date)"
+                      example: 3.65
+                    conversion_date:
+                      type: string
+                      format: date
+                      description: "Currency exchange date in dd-mm-yyyy format"
+                    supply_date:
+                      type: string
+                      format: date
+                      description: "Expected delivery date for this line item"
+                      example: "15-04-2026"
+                example:
+                  - description: "Office Chair"
+                    quantity: 10
+                    price_per_unit: 250.75
+                    catalog_id: "SKU12345"
+                    supply_date: "15-04-2026"
+                  - description: "Monitor Stand"
+                    quantity: 5
+                    price_per_unit: 89.90
+                    currency_symbol: "USD"
+                    conversion_rate: 3.65
+      responses:
+        200:
+          description: Request accepted and processed
+          schema:
+            type: object
+            properties:
+              result:
+                type: string
+                default: '200'
+              description:
+                type: string
+                default: "Success"
+              document_id:
+                type: string
+                description: Formatted PO document number
+              document_system_id:
+                type: integer
+                description: Internal system ID of the created PO
+              document_link:
+                type: string
+                description: Public URL to view/download the PO document
+
+  /generate_donation_receipt:
+    x-summary: Create Donation Receipt
+    post:
+      operationId: generateDonationReceipt
+      description: |
+        This endpoint creates a **Donation Receipt** (קבלה על תרומה) in the Payper system.
+        Donation receipts are similar to standard receipts but are designated for charitable donations
+        and comply with Israeli tax authority requirements for Section 46 donations.
+        #### Customer Identification
+        At least one of `customer_unique_id`, `customer_mail`, or `customer_system_id` is required.
+        #### Request Parameters
+        <table>
+          <tr><th>Attributes</th><th>Parameter</th><th>Required</th></tr>
+          <tr><td>customer_unique_id</td><td>string</td><td>Yes (or customer_mail/customer_system_id)</td></tr>
+          <tr><td>customer_mail</td><td>string</td><td>Yes (or customer_unique_id/customer_system_id)</td></tr>
+          <tr><td>customer_name</td><td>string</td><td>Required for new customer</td></tr>
+          <tr><td>customer_mobile</td><td>string</td><td>No</td></tr>
+          <tr><td>customer_address</td><td>string</td><td>No</td></tr>
+          <tr><td>customer_system_id</td><td>integer</td><td>No (alternative identifier)</td></tr>
+          <tr><td>document_lang</td><td>enum (hb, en)</td><td>No (default: hb)</td></tr>
+          <tr><td>document_subject</td><td>string</td><td>No</td></tr>
+          <tr><td>document_remarks</td><td>string</td><td>No</td></tr>
+          <tr><td>send_by_mail</td><td>bool</td><td>No (default: false)</td></tr>
+          <tr><td>invoice_lines</td><td>array</td><td>Yes</td></tr>
+          <tr><td>receipt_lines</td><td>array</td><td>Yes</td></tr>
+        </table>
+        <hr/>
+      summary: Create Donation Receipt
+      tags:
+        - Generate documents
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            required:
+              - api_user
+              - invoice_lines
+              - receipt_lines
+            properties:
+              api_user:
+                type: string
+                description: API user email
+              customer_unique_id:
+                type: string
+                description: Donor business number or personal ID
+              customer_mail:
+                type: string
+                description: Donor email address
+              customer_name:
+                type: string
+                description: Donor full name (required for new donor)
+              customer_system_id:
+                type: integer
+                description: Existing donor system ID
+              document_lang:
+                type: string
+                enum: [hb, en]
+                default: hb
+              document_subject:
+                type: string
+              document_remarks:
+                type: string
+              send_by_mail:
+                type: boolean
+                default: false
+              invoice_lines:
+                type: array
+                description: Donation line items
+                items:
+                  type: object
+                  properties:
+                    description:
+                      type: string
+                      example: "Donation"
+                    price_per_unit:
+                      type: number
+                      example: 500
+                    quantity:
+                      type: number
+                      default: 1
+              receipt_lines:
+                type: array
+                description: Payment details for the donation
+                items:
+                  type: object
+                  properties:
+                    payment_type:
+                      type: string
+                      enum: [cash, cc, cheque, bank_transfer, bit, paypal]
+                    amount:
+                      type: number
+                    date:
+                      type: string
+                      format: date
+                      description: Payment date (YYYY-MM-DD)
+      responses:
+        200:
+          description: Donation receipt created successfully
+          schema:
+            type: object
+            properties:
+              result:
+                type: string
+                default: '200'
+              description:
+                type: string
+                default: "Success"
+              document_id:
+                type: string
+                description: Formatted document number (e.g. "001-2026")
+              document_system_id:
+                type: integer
+              document_link:
+                type: string
+        401:
+          description: Authentication failed
+          schema:
+            type: object
+            properties:
+              result:
+                type: string
+                example: "110"
+              description:
+                type: string
+                example: "Unknown credentials"
+        400:
+          description: Validation error
+          schema:
+            type: object
+            properties:
+              result:
+                type: string
+              description:
+                type: string
+
+  /invoice_upload:
+    x-summary: Invoice Upload
+    post:
+      description: |
+        This endpoint uploads an **expense document** (invoice scan, PDF, or image) to the Payper system
+        for OCR processing. Accepted file types: **pdf**, **png**, **jpg**, **jpeg**.
+        
+        Either `file_url` (accessible URL) or `base64` (encoded content) must be provided.
+        The document will be processed asynchronously via OCR.
+        <hr/>
+      summary: Send digital invoice
+      operationId: invoiceUpload
+      tags:
+        - Finance
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            required:
+              - file_name
+              - file_url
+              - base64
+            properties:
+              file_name:
+                type: string
+                description: "The file name + extension (Can be one of the following: '.pdf','.png','.jpg','.jpeg')"
+              file_url:
+                type: string
+                description: Accessible URL of the invoice (Not required if passing base64)
+              base64:
+                type: string
+                description: The invoice as base64 string (Not required if passing file_url)
+              remote_id:
+                type: string
+                description: ID to be returned on webhooks and pull_expenses end point
+      responses:
+        200:
+          description: Request accepted and processed
+          schema:
+            type: object
+            properties:
+              result:
+                type: string
+                default: '200'
+              description:
+                type: string
+                default: "Success"
+              document_system_id:
+                type: integer
+                description: System ID of the uploaded document
+        401:
+          description: Authentication failed
+          schema:
+            type: object
+            properties:
+              result:
+                type: string
+                example: "110"
+              description:
+                type: string
+                example: "Unknown credentials"
+        400:
+          description: Validation error
+          schema:
+            type: object
+            properties:
+              result:
+                type: string
+                description: |
+                  Error codes:
+                  - **909** — File name not valid (must be name.extension)
+                  - **910** — File name missing
+                  - **911** — File type not valid (accepts: pdf, png, jpg, jpeg)
+                  - **912** — File URL or base64 content missing
+                  - **915** — Error receiving/downloading file
+              description:
+                type: string
+  /retrieve_customer:
+    x-summary: Get customer system id
+    post:
+      description: |
+        This endpoint retrieves a customer's Payper system ID using their email, mobile, or business number. Useful for verifying customer existence or for use in other API calls.  
+        <hr/>
+      summary: Get customer system id
+      operationId: retrieveCustomer
+      tags:
+        - Customers
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            required:
+              - customer_unique_id
+              - customer_mail
+              - customer_mobile
+            properties:
+              customer_unique_id:
+                type: string
+                description: The Customer business number OR Personal identity number, required if no customer_mail or customer_mobile
+              customer_mail:
+                type: string
+                description: The Customer main email address, required if no customer_unique_id or customer_mobile
+              customer_mobile:
+                type: string
+                description: The Customer main mobile phone, required if no customer_unique_id or customer_mail
+      responses:
+        200:
+          description: Request accepted and processed
+          schema:
+            type: object
+            properties:
+              result:
+                type: string
+                default: '200'
+              description:
+                type: string
+                default: "Success"
+              customer_system_id:
+                type: string
+
+  /get_customer_details:
+    x-summary: Get customer details
+    post:
+      description: |
+        This endpoint retrieves customer details using their system ID, email, mobile, or business number.  
+        <hr/>
+      summary: Get customer details
+      operationId: getCustomerDetails
+      tags:
+        - Customers
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            required:
+              - system_id
+              - customer_unique_id
+              - customer_mail
+              - customer_mobile
+            properties:
+              system_id:
+                type: string
+                description: The Customer system id (can be retrieve by 'retrieve_customer' end point)
+              customer_unique_id:
+                type: string
+                description: The Customer business number OR Personal identity number, required if no system_id or customer_mail or customer_mobile
+              customer_mail:
+                type: string
+                description: The Customer main email address, required if no system_id or customer_unique_id or customer_mobile
+              customer_mobile:
+                type: string
+                description: The Customer main mobile phone, required if no system_id or customer_unique_id or customer_mail
+      responses:
+        200:
+          description: Request accepted and processed
+          schema:
+            type: object
+            properties:
+              result:
+                type: string
+                default: '200'
+              description:
+                type: string
+                default: "Success"
+              customer_system_id:
+                type: string
+              name:
+                type: string
+              business_num:
+                type: string
+              email:
+                type: string
+              mobile:
+                type: string
+              address:
+                type: string
+
+  /customer_invoices:
+    x-summary: Get customer invoices from given date
+    post:
+      description: |
+        This endpoint retrieves customer invoices from a specified date using their system ID, email, mobile, or business number.  
+        <hr/>
+      summary: Get customer invoices
+      operationId: customerInvoices
+      tags:
+        - Customers
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            required:
+              - system_id
+              - customer_unique_id
+              - customer_mail
+              - customer_mobile
+            properties:
+              from_date:
+                type: string
+                format: 'date dd-mm-yyyy'
+                description: The date from, Default beginning of current year
+              system_id:
+                type: string
+                description: The Customer system id (can be retrieve by 'retrieve_customer' end point)
+              customer_unique_id:
+                type: string
+                description: The Customer business number OR Personal identity number, required if no system_id or customer_mail or customer_mobile
+              customer_mail:
+                type: string
+                description: The Customer main email address, required if no system_id or customer_unique_id or customer_mobile
+              customer_mobile:
+                type: string
+                description: The Customer main mobile phone, required if no system_id or customer_unique_id or customer_mail
+      responses:
+        200:
+          description: Request accepted and processed
+          schema:
+            type: object
+            properties:
+              result:
+                type: string
+                default: '200'
+              description:
+                type: string
+                default: "Success"
+              invoices:
+                type: array
+
+  /customer_price_list:
+    x-summary: Get customer price list
+    post:
+      description: |
+        This endpoint retrieves the customer's item price list.  
+        <hr/>
+      summary: Get customer price list
+      operationId: customerPriceList
+      tags:
+        - Customers
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            required:
+              - customer_system_id
+            properties:
+              customer_system_id:
+                type: string
+                description: The Customer system id (can be retrieve by 'retrieve_customer' end point)
+      responses:
+        200:
+          description: Request accepted and processed
+          schema:
+            type: object
+            properties:
+              result:
+                type: string
+                default: '200'
+              description:
+                type: string
+                default: "Success"
+              price_list:
+                type: object
+                properties:
+                  SKU:
+                    type: number
+
+  /customer_last_price:
+    x-summary: Get customer last price for given item
+    post:
+      description: |
+        This endpoint retrieves the customer's last price for a given item by its SKU.  
+        <hr/>
+      summary: Get customer last price for given item
+      tags:
+        - Customers
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            required:
+              - customer_system_id
+              - item_sku
+            properties:
+              customer_system_id:
+                type: string
+                description: The Customer system id (can be retrieve by 'retrieve_customer' end point)
+              item_sku:
+                type: string
+                description: The catalog item SKU
+      responses:
+        200:
+          description: Request accepted and processed
+          schema:
+            type: object
+            properties:
+              result:
+                type: string
+                default: '200'
+              description:
+                type: string
+                default: "Success"
+              last_price:
+                type: string
+              purchase_date:
+                type: string
+
+  /customer_gl:
+    x-summary: Get customer general ledger
+    post:
+      description: |
+        This endpoint retrieves specific and public links to the customer's general ledger.  
+        <hr/>
+      summary: Get customer general ledger
+      tags:
+        - Customers
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            required:
+              - system_id
+              - customer_unique_id
+              - customer_mail
+            properties:
+              system_id:
+                type: string
+                description: The Customer Payper system id
+              customer_unique_id:
+                type: string
+                description: The Customer business number OR Personal identity number, required if no customer_mail or system_id
+              customer_mail:
+                type: string
+                description: The Customer main email address, required if no customer_unique_id or system_id
+              from_date:
+                type: string
+                format: 'date dd-mm-yyyy'
+                description: The date from, Default beginning of current year
+      responses:
+        200:
+          description: Request accepted and processed
+          schema:
+            type: object
+            properties:
+              result:
+                type: string
+                default: '200'
+              description:
+                type: string
+                default: "Success"
+              gl_link:
+                type: string
+              archive_link:
+                type: string
+
+  /cancel_proforma:
+    x-summary: Cancel proforma invoice
+    post:
+      description: |
+        This endpoint used to mark proforma invoice as canceled.  
+        <hr/>
+      summary: Cancel proforma invoice
+      tags:
+        - Finance
+      parameters:
+        - name: body
+          in: body
+          schema:
+            type: object
+            required:
+              - document_system_id
+              - document_id
+            properties:
+              document_system_id:
+                type: integer
+                description: The proforma system id as you get from 'generate_proforma' end point. Not required if document_id is present.
+              document_id:
+                type: string
+                description: The proforma document id as you get from 'generate_proforma' end point. Not required if document_id is present.
+      responses:
+        200:
+          description: Request accepted and processed
+          schema:
+            type: object
+            properties:
+              result:
+                type: string
+                default: '200'
+
+  /daily_income:
+    x-summary: Get Daily Incomes
+    post:
+      description: |
+        This endpoint retrieves daily incomes by payment type. Results are returned as a link to download an Excel file. If no parameters are provided, it defaults to the current day.  
+        <hr/>
+      summary: Get Daily Incomes
+      tags:
+        - Finance
+      parameters:
+        - name: body
+          in: body
+          schema:
+            type: object
+            properties:
+              from_date:
+                type: string
+                format: 'date dd-mm-yyyy'
+                description: The date from, Default is today
+              to_date:
+                type: string
+                format: 'date dd-mm-yyyy'
+                description: The date to, Default is today
+      responses:
+        200:
+          description: Request accepted and processed
+          schema:
+            type: object
+            properties:
+              result:
+                type: string
+                default: '200'
+              document_link:
+                type: string
+                description: A link to Excel file with the daily incomes
+
+  /pull_expenses:
+    x-summary: Get expenses
+    post:
+      description: |
+        This endpoint retrieves expenses based on the provided query parameters.  
+        <hr/>
+      summary: Get expenses
+      operationId: pullExpenses
+      tags:
+        - Finance
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              query_options:
+                type: object
+                description: The query for the current request
+                properties:
+                  updated_from:
+                    type: string
+                    description: Date Time, last update time on Payper system
+                    format: date-time
+                    example: '2026-01-01 00:00'
+                  updated_to:
+                    type: string
+                    description: Date Time, last update time on Payper system
+                    format: date-time
+                    example: '2026-01-01 00:00'
+                  created_from:
+                    type: string
+                    description: Date Time, creation time on Payper system
+                    format: date-time
+                    example: '2026-01-01 00:00'
+                  created_to:
+                    type: string
+                    description: Date Time, creation time on Payper system
+                    format: date-time
+                    example: '2026-01-01 00:00'
+                  document_date_from:
+                    type: string
+                    description: Date, document publish date
+                    format: 'dd/mm/yyyy'
+                  document_date_to:
+                    type: string
+                    description: Date, document publish date
+                    format: 'dd/mm/yyyy'
+                  document_id:
+                    type: string
+                    description: The document number
+                  system_id:
+                    type: integer
+                    description: The document system id
+                  order:
+                    type: string
+                    description: "The results order, Can be one of: document_date | created_at"
+                    default: document_date
+                  page:
+                    type: integer
+                    description: The results desirable page
+                    minimum: 1
+                  per_page:
+                    type: integer
+                    description: The size of the results
+                    minimum: 1
+                    maximum: 50
+                    default: 50
+      responses:
+        200:
+          description: Request accepted and processed
+          schema:
+            type: object
+            properties:
+              result:
+                type: string
+                default: '200'
+              description:
+                type: string
+                default: "Success"
+              total_entries:
+                type: string
+                description: The total size of the query
+              total_pages:
+                type: string
+                description: The total pages of the query
+              next_page:
+                type: string
+                description: The next available page
+              previous_page:
+                type: string
+                description: The previous available page
+              expenses:
+                type: array
+                items:
+                  type: object
+                description: An array of JSON of the search
+
+  /get_inventories:
+    x-summary: Get list of inventory
+    post:
+      description: |
+        This endpoint retrieves a paginated list of inventory items with stock levels,
+        supplier data, purchase costs, and sales metrics.
+        #### Request Parameters
+        <table>
+          <tr><th>Attributes</th><th>Parameter</th><th>Required</th></tr>
+          <tr><td>page</td><td>integer</td><td>No (default: 1, 100 items per page)</td></tr>
+        </table>
+        <hr/>
+      summary: Get list of inventory
+      operationId: getInventories
+      tags:
+        - Inventory
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              api_user:
+                type: string
+                description: API user email
+              page:
+                type: integer
+                default: 1
+                description: Page number (100 items per page)
+      responses:
+        200:
+          description: Request accepted and processed
+          schema:
+            type: object
+            properties:
+              result:
+                type: string
+                default: '200'
+              description:
+                type: string
+                default: "Success"
+              total_items:
+                type: integer
+              total_pages:
+                type: integer
+              current_page:
+                type: integer
+              inventories:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    catalog_item_id:
+                      type: string
+                      description: Item SKU / makat
+                    name:
+                      type: string
+                      description: Product name (Hebrew)
+                    name_en:
+                      type: string
+                      description: Product name (English) for foreign supplier portal
+                    quantity:
+                      type: number
+                      description: Current stock quantity
+                    is_active:
+                      type: boolean
+                      description: Whether the product is active
+                    is_package:
+                      type: boolean
+                      description: Whether this is a bundle/package
+                    supplier_name:
+                      type: string
+                      description: Primary supplier name
+                    supplier_tax_id:
+                      type: string
+                      description: Supplier business number
+                    supplier_invoice_lang:
+                      type: string
+                      description: Supplier invoice language (hb/en)
+                    purchase_cost:
+                      type: number
+                      description: Unit purchase cost
+                    purchase_currency:
+                      type: string
+                      description: Purchase currency (ILS, USD, EUR)
+                    open_orders_qty:
+                      type: number
+                      description: Quantity ordered but not yet received
+                    delivery_days:
+                      type: integer
+                      description: Average delivery days from supplier
+                    daily_sales:
+                      type: number
+                      description: Average daily sales quantity
+                    monthly_sales:
+                      type: number
+                      description: Average monthly sales quantity
+                    min_per_order:
+                      type: number
+                      description: Minimum order quantity
+                    product_age_days:
+                      type: integer
+                      description: Days since product first stocked
+
+  /get_stock_for_item:
+    x-summary: Get quantity for item
+    post:
+      description: |
+        This endpoint retrieves the quantity of a specific item in the inventory by its catalog item ID (SKU/makat).
+        #### Request Parameters
+        <table>
+          <tr><th>Attributes</th><th>Parameter</th><th>Required</th></tr>
+          <tr><td>catalog_item_id</td><td>string</td><td>Yes</td></tr>
+        </table>
+        <hr/>
+      summary: Get quantity of a certain item in the inventory
+      operationId: getStockForItem
+      tags:
+        - Inventory
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            required:
+              - api_user
+              - catalog_item_id
+            properties:
+              api_user:
+                type: string
+                description: API user email
+              catalog_item_id:
+                type: string
+                description: Item SKU / makat to look up
+                example: "SKU12345"
+      responses:
+        200:
+          description: Request accepted and processed
+          schema:
+            type: object
+            properties:
+              result:
+                type: string
+                default: '200'
+              description:
+                type: string
+                default: "Success"
+              catalog_item_id:
+                type: string
+              catalog_item_name:
+                type: string
+              quantity:
+                type: integer
+
+securityDefinitions:
+  ApiKeyAuth:
+    type: apiKey
+    name: API_KEY
+    in: header
+    description: |
+      All requests must include an <b>api_key</b> in the header and an <b>api_user</b> in the request parameters.  
+      <br/>**Example:**  
+      ```plaintext
+      request.headers["API_KEY"] = '9b0452845ec0a37c9594'
+      request.body["api_user"] = 'api@user'

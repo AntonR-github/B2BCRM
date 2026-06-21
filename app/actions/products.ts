@@ -87,59 +87,60 @@ export async function syncPayperProducts(siteId: string): Promise<{ synced: numb
 
   const allowedCategories = site.payperCategories ?? []
 
-  let res: Response
-  try {
-    res = await fetch('https://api.payper.co.il/get_inventories', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ api_key: apiKey, account }),
-    })
-  } catch (e: any) {
-    return { synced: 0, errors: [], apiError: `Network error: ${e.message}` }
-  }
-
-  if (!res.ok) return { synced: 0, errors: [], apiError: `Payper API error: ${res.status}` }
-  const data = await res.json()
-  const items: any[] = Array.isArray(data) ? data : data.products ?? data.items ?? []
-
   let synced = 0
   const errors: string[] = []
+  let page = 1
+  let totalPages = 1
 
-  for (const item of items) {
-    const sku      = item.product_sku ?? item.sku
-    const name     = item.product_name ?? item.name
-    const category = item.category_name ?? item.category
-    const imageUrl = item.image_url ?? item.image
-    const isActive = item.is_active === true || item.is_active === '1' || item.is_active === 'true'
-
-    if (!sku) continue
-    if (allowedCategories.length > 0 && !allowedCategories.includes(category)) continue
-
+  while (page <= totalPages) {
+    let res: Response
     try {
-      const existing = await prisma.product.findFirst({ where: { siteId, payperSku: sku } })
-      if (existing) {
-        await prisma.product.update({
-          where: { id: existing.id },
-          data: {
-            ...(name && { name }),
-            ...(imageUrl && { image: imageUrl }),
-          },
-        })
-      } else {
-        let handle = (name || sku).toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\p{L}\p{N}-]/gu, '') || String(Date.now())
-        const base = handle
-        let attempt = 1
-        while (await prisma.product.findUnique({ where: { siteId_handle: { siteId, handle } } })) {
-          handle = `${base}-${attempt++}`
-        }
-        await prisma.product.create({
-          data: { siteId, handle, name: name || sku, price: 0, image: imageUrl || null, payperSku: sku, active: false },
-        })
-      }
-      synced++
+      res = await fetch('https://app.payper.co.il/api/get_inventories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'API_KEY': apiKey },
+        body: JSON.stringify({ api_user: account, page }),
+      })
     } catch (e: any) {
-      errors.push(`${sku}: ${e.message}`)
+      return { synced, errors, apiError: `Network error: ${e.message}` }
     }
+
+    if (!res.ok) return { synced, errors, apiError: `Payper API error: ${res.status}` }
+    const data = await res.json()
+
+    if (page === 1) totalPages = data.total_pages ?? 1
+    const items: any[] = data.inventories ?? []
+
+    for (const item of items) {
+      const sku  = item.catalog_item_id
+      const name = item.name
+
+      if (!sku) continue
+
+      try {
+        const existing = await prisma.product.findFirst({ where: { siteId, payperSku: sku } })
+        if (existing) {
+          await prisma.product.update({
+            where: { id: existing.id },
+            data: { ...(name && { name }) },
+          })
+        } else {
+          let handle = (name || sku).toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\p{L}\p{N}-]/gu, '') || String(Date.now())
+          const base = handle
+          let attempt = 1
+          while (await prisma.product.findUnique({ where: { siteId_handle: { siteId, handle } } })) {
+            handle = `${base}-${attempt++}`
+          }
+          await prisma.product.create({
+            data: { siteId, handle, name: name || sku, price: 0, payperSku: sku, active: false },
+          })
+        }
+        synced++
+      } catch (e: any) {
+        errors.push(`${sku}: ${e.message}`)
+      }
+    }
+
+    page++
   }
 
   revalidatePath(`/sites/${siteId}/products`)
