@@ -1,7 +1,7 @@
 'use client'
 import { useState, useTransition } from 'react'
 import Image from 'next/image'
-import { createProduct, updateProduct, deleteProduct, toggleProductActive, syncPayperProducts, clearAllProducts } from '@/app/actions/products'
+import { createProduct, updateProduct, deleteProduct, toggleProductActive, clearAllProducts } from '@/app/actions/products'
 import { ImageUpload } from '@/components/image-upload'
 
 type Product = {
@@ -148,38 +148,12 @@ export function ProductsClient({
 }) {
   const [creating, setCreating] = useState(false)
   const [pending, startTransition] = useTransition()
-  const [syncing, setSyncing] = useState(false)
-  const [syncResult, setSyncResult] = useState<string | null>(null)
-
-  async function handleSync() {
-    setSyncing(true)
-    setSyncResult(null)
-    try {
-      const result = await syncPayperProducts(siteId)
-      if (result.apiError) {
-        setSyncResult(`Error: ${result.apiError}`)
-      } else {
-        setSyncResult(`Synced ${result.synced} products${result.errors.length ? ` (${result.errors.length} errors)` : ''}`)
-      }
-    } catch (e: any) {
-      setSyncResult(`Error: ${e.message}`)
-    }
-    setSyncing(false)
-  }
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-white">Products — {siteName} <span className="text-slate-500 text-lg font-normal">({products.length})</span></h1>
         <div className="flex items-center gap-3">
-          {syncResult && <span className="text-sm text-slate-400">{syncResult}</span>}
-          <button
-            onClick={handleSync}
-            disabled={syncing}
-            className="bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-white px-5 py-2.5 rounded-lg text-base font-medium"
-          >
-            {syncing ? 'Syncing...' : '🔄 Sync from Payper'}
-          </button>
           <button
             onClick={async () => {
               if (!confirm('Delete all products for this site? This cannot be undone.')) return
