@@ -112,6 +112,12 @@ export function PayperSettingsClient({ siteId, siteSlug, payperCategories, paype
             {savingSecret ? 'Saving...' : 'Save'}
           </button>
         </div>
+        {payperWebhookSecret && (
+          <div className="mt-3 flex items-center gap-2 bg-slate-900 border border-slate-700 rounded px-3 py-2">
+            <span className="text-xs text-slate-500 shrink-0">Currently active:</span>
+            <span className="text-xs text-slate-300 font-mono truncate">{payperWebhookSecret}</span>
+          </div>
+        )}
         <p className="text-xs text-slate-500 mt-2">
           Paste the identifier Payper already uses (from your WooCommerce plugin), or Generate a new one and configure it in Payper.
         </p>
@@ -124,18 +130,6 @@ export function PayperSettingsClient({ siteId, siteSlug, payperCategories, paype
           Only products from these Payper categories will sync to this site.
           Leave empty to accept all categories.
         </p>
-
-        <div className="flex flex-wrap gap-2 mb-3 min-h-[36px]">
-          {categories.length === 0 && (
-            <span className="text-xs text-slate-500 italic">No categories set — all products will be accepted</span>
-          )}
-          {categories.map(cat => (
-            <span key={cat} className="flex items-center gap-1.5 bg-slate-700 text-slate-200 text-sm px-3 py-1 rounded-full">
-              {cat}
-              <button onClick={() => removeCategory(cat)} className="text-slate-400 hover:text-red-400 transition-colors">×</button>
-            </span>
-          ))}
-        </div>
 
         <div className="flex gap-2">
           <input
@@ -151,6 +145,18 @@ export function PayperSettingsClient({ siteId, siteSlug, payperCategories, paype
           >
             Add
           </button>
+        </div>
+
+        <div className="flex flex-wrap gap-2 mt-3 min-h-[36px]">
+          {categories.length === 0 && (
+            <span className="text-xs text-slate-500 italic">No categories set — all products will be accepted</span>
+          )}
+          {categories.map(cat => (
+            <span key={cat} className="flex items-center gap-1.5 bg-slate-700 text-slate-200 text-sm px-3 py-1 rounded-full">
+              {cat}
+              <button onClick={() => removeCategory(cat)} className="text-slate-400 hover:text-red-400 transition-colors">×</button>
+            </span>
+          ))}
         </div>
 
         <button
