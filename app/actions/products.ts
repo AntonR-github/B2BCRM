@@ -74,6 +74,13 @@ export async function deleteProduct(id: string, siteId: string) {
   revalidatePath(`/sites/${siteId}/products`)
 }
 
+export async function clearAllProducts(siteId: string) {
+  const session = await auth()
+  if (!session) throw new Error('Unauthorized')
+  await prisma.product.deleteMany({ where: { siteId } })
+  revalidatePath(`/sites/${siteId}/products`)
+}
+
 export async function syncPayperProducts(siteId: string): Promise<{ synced: number; errors: string[]; apiError?: string }> {
   const session = await auth()
   if (!session) return { synced: 0, errors: ['Unauthorized'] }

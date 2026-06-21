@@ -1,7 +1,7 @@
 'use client'
 import { useState, useTransition } from 'react'
 import Image from 'next/image'
-import { createProduct, updateProduct, deleteProduct, toggleProductActive, syncPayperProducts } from '@/app/actions/products'
+import { createProduct, updateProduct, deleteProduct, toggleProductActive, syncPayperProducts, clearAllProducts } from '@/app/actions/products'
 import { ImageUpload } from '@/components/image-upload'
 
 type Product = {
@@ -179,6 +179,15 @@ export function ProductsClient({
             className="bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-white px-5 py-2.5 rounded-lg text-base font-medium"
           >
             {syncing ? 'Syncing...' : '🔄 Sync from Payper'}
+          </button>
+          <button
+            onClick={async () => {
+              if (!confirm('Delete all products for this site? This cannot be undone.')) return
+              await clearAllProducts(siteId)
+            }}
+            className="bg-red-700 hover:bg-red-600 text-white px-5 py-2.5 rounded-lg text-base font-medium"
+          >
+            Clear All
           </button>
           <button onClick={() => setCreating(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-lg text-base font-medium">
             + New Product
