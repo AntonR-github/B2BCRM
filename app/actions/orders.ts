@@ -16,6 +16,7 @@ export async function updateOrderStatus(id: string, siteId: string, status: stri
   // If switching to paid and no Payper invoice yet, generate one
   if (status === 'paid' && !order.payperDocId) {
     console.log('[updateOrderStatus] triggering Payper invoice for order:', id)
+    console.log('[updateOrderStatus] PAYPER_API_KEY set:', !!process.env.PAYPER_API_KEY, '| PAYPER_ACCOUNT:', process.env.PAYPER_ACCOUNT)
     try {
       const items = order.items as Array<{ name: string; price: number; qty: number; variantId?: string }>
       const today = new Date()
@@ -24,9 +25,9 @@ export async function updateOrderStatus(id: string, siteId: string, status: stri
       const yyyy = today.getFullYear()
       const dateStr = `${dd}-${mm}-${yyyy}`
 
-      const payperRes = await fetch('https://payper.co.il/app/api/generate_invoice_receipt', {
+      const payperRes = await fetch('https://app.payper.co.il/api/generate_invoice_receipt', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'api_key': process.env.PAYPER_API_KEY! },
+        headers: { 'Content-Type': 'application/json', 'API_KEY': process.env.PAYPER_API_KEY! },
         body: JSON.stringify({
           api_user: process.env.PAYPER_ACCOUNT,
           casual_customer: '1',
