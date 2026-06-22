@@ -17,7 +17,7 @@ export async function updateOrderStatus(id: string, siteId: string, status: stri
   if (status === 'paid' && !order.payperDocId) {
     console.log('[updateOrderStatus] triggering Payper invoice for order:', id)
     try {
-      const items = order.items as Array<{ name: string; price: number; qty: number }>
+      const items = order.items as Array<{ name: string; price: number; qty: number; variantId?: string }>
       const today = new Date()
       const dd = String(today.getDate()).padStart(2, '0')
       const mm = String(today.getMonth() + 1).padStart(2, '0')
@@ -34,12 +34,19 @@ export async function updateOrderStatus(id: string, siteId: string, status: stri
           customer_name: order.customerName,
           customer_mobile: order.customerPhone,
           customer_address: order.customerAddress,
-          send_by_mail: true,
+          document_subject: `מס' הזמנה: ${order.id}`,
+          document_lang: 'hb',
+          document_no_vat: 'false',
+          discount: 'false',
+          document_rounded: 'false',
+          send_by_mail: 'true',
+          order_id: order.id,
           invoice_lines: items.map(item => ({
             description: item.name,
             quantity: item.qty,
             price_per_unit: item.price,
             include_vat: 'true',
+            ...(item.variantId ? { catalog_id: item.variantId } : {}),
           })),
           receipt_lines: [{ payment_type: 'Cc', date: dateStr, amount: order.total }],
         }),

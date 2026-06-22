@@ -28,7 +28,7 @@ export async function POST(
   // Generate Payper invoice-receipt (best-effort)
   let payperDocId: string | undefined
   try {
-    const items = order.items as Array<{ name: string; price: number; qty: number }>
+    const items = order.items as Array<{ name: string; price: number; qty: number; variantId?: string }>
     const today = new Date()
     const dd = String(today.getDate()).padStart(2, '0')
     const mm = String(today.getMonth() + 1).padStart(2, '0')
@@ -37,10 +37,7 @@ export async function POST(
 
     const payperRes = await fetch('https://payper.co.il/app/api/generate_invoice_receipt', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'api_key': process.env.PAYPER_API_KEY!,
-      },
+      headers: { 'Content-Type': 'application/json', 'api_key': process.env.PAYPER_API_KEY! },
       body: JSON.stringify({
         api_user: process.env.PAYPER_ACCOUNT,
         casual_customer: '1',
@@ -48,12 +45,19 @@ export async function POST(
         customer_name: order.customerName,
         customer_mobile: order.customerPhone,
         customer_address: order.customerAddress,
-        send_by_mail: true,
+        document_subject: `מס' הזמנה: ${orderId}`,
+        document_lang: 'hb',
+        document_no_vat: 'false',
+        discount: 'false',
+        document_rounded: 'false',
+        send_by_mail: 'true',
+        order_id: orderId,
         invoice_lines: items.map((item) => ({
           description: item.name,
           quantity: item.qty,
           price_per_unit: item.price,
           include_vat: 'true',
+          ...(item.variantId ? { catalog_id: item.variantId } : {}),
         })),
         receipt_lines: [{ payment_type: 'Cc', date: dateStr, amount: order.total }],
       }),
