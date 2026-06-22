@@ -7,7 +7,7 @@ export async function updateOrderStatus(id: string, siteId: string, status: stri
   const session = await auth()
   if (!session) throw new Error('Unauthorized')
 
-  const order = await prisma.order.findUnique({ where: { id } })
+  const order = await prisma.order.findFirst({ where: { id, siteId } })
   if (!order) throw new Error('Order not found')
 
   await prisma.order.update({ where: { id }, data: { status } })
