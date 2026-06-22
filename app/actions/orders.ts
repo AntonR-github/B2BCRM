@@ -12,8 +12,10 @@ export async function updateOrderStatus(id: string, siteId: string, status: stri
 
   await prisma.order.update({ where: { id }, data: { status } })
 
+  console.log('[updateOrderStatus] status:', status, 'payperDocId:', order.payperDocId)
   // If switching to paid and no Payper invoice yet, generate one
   if (status === 'paid' && !order.payperDocId) {
+    console.log('[updateOrderStatus] triggering Payper invoice for order:', id)
     try {
       const items = order.items as Array<{ name: string; price: number; qty: number }>
       const today = new Date()
@@ -43,6 +45,7 @@ export async function updateOrderStatus(id: string, siteId: string, status: stri
       })
 
       const payperData = await payperRes.json()
+      console.log('[updateOrderStatus] Payper response:', JSON.stringify(payperData))
       if (payperData.result === '200' && payperData.document_id) {
         await prisma.order.update({ where: { id }, data: { payperDocId: payperData.document_id } })
       } else {
