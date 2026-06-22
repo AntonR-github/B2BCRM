@@ -6,7 +6,53 @@ import { revalidatePath } from 'next/cache'
 export async function updateOrderStatus(id: string, siteId: string, status: string) {
   const session = await auth()
   if (!session) throw new Error('Unauthorized')
+
+  const order = await prisma.order.findUnique({ where: { id } })
+  if (!order) throw new Error('Order not found')
+
   await prisma.order.update({ where: { id }, data: { status } })
+
+  // If switching to paid and no Payper invoice yet, generate one
+  if (status === 'paid' && !order.payperDocId) {
+    try {
+      const items = order.items as Array<{ name: string; price: number; qty: number }>
+      const today = new Date()
+      const dd = String(today.getDate()).padStart(2, '0')
+      const mm = String(today.getMonth() + 1).padStart(2, '0')
+      const yyyy = today.getFullYear()
+      const dateStr = `${dd}-${mm}-${yyyy}`
+
+      const payperRes = await fetch('https://app.payper.co.il/api/generate_invoice_receipt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'API_KEY': process.env.PAYPER_API_KEY! },
+        body: JSON.stringify({
+          api_user: process.env.PAYPER_ACCOUNT,
+          customer_mail: order.customerEmail,
+          customer_name: order.customerName,
+          customer_mobile: order.customerPhone,
+          customer_address: order.customerAddress,
+          send_by_mail: true,
+          invoice_lines: items.map(item => ({
+            description: item.name,
+            quantity: item.qty,
+            price_per_unit: item.price,
+            include_vat: true,
+          })),
+          receipt_lines: [{ payment_type: 'Cc', date: dateStr, amount: order.total }],
+        }),
+      })
+
+      const payperData = await payperRes.json()
+      if (payperData.result === '200' && payperData.document_id) {
+        await prisma.order.update({ where: { id }, data: { payperDocId: payperData.document_id } })
+      } else {
+        console.error('[updateOrderStatus] Payper invoice failed:', payperData)
+      }
+    } catch (err) {
+      console.error('[updateOrderStatus] Payper invoice error:', err)
+    }
+  }
+
   revalidatePath(`/sites/${siteId}/orders`)
 }
 
