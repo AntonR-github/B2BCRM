@@ -58,7 +58,7 @@ export async function updateOrderStatus(id: string, siteId: string, status: stri
 
       const payperData = await payperRes.json()
       console.log('[updateOrderStatus] Payper response:', JSON.stringify(payperData))
-      if (payperData.result === '200' && payperData.document_id) {
+      if ((payperData.result === 200 || payperData.result === '200') && payperData.document_id) {
         await prisma.order.update({ where: { id }, data: { payperDocId: payperData.document_id } })
       } else {
         console.error('[updateOrderStatus] Payper invoice failed:', payperData)

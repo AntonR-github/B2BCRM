@@ -67,7 +67,7 @@ export async function POST(
     })
 
     const payperData = await payperRes.json()
-    if (payperData.result === '200' && payperData.document_id) {
+    if ((payperData.result === 200 || payperData.result === '200') && payperData.document_id) {
       payperDocId = payperData.document_id
       await prisma.order.update({
         where: { id: orderId },
