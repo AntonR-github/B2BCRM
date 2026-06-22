@@ -30,6 +30,8 @@ export async function updateOrderStatus(id: string, siteId: string, status: stri
         headers: { 'Content-Type': 'application/json', 'API_KEY': process.env.PAYPER_API_KEY! },
         body: JSON.stringify({
           api_user: process.env.PAYPER_ACCOUNT,
+          woocommerce: '1',
+          source: 'xvape',
           casual_customer: '1',
           customer_mail: order.customerEmail,
           customer_name: order.customerName,
