@@ -35,14 +35,16 @@ export async function POST(
     const yyyy = today.getFullYear()
     const dateStr = `${dd}-${mm}-${yyyy}`
 
-    const payperRes = await fetch('https://app.payper.co.il/api/generate_invoice_receipt', {
+    const payperRes = await fetch('https://payper.co.il/app/api/generate_invoice_receipt', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'API_KEY': process.env.PAYPER_API_KEY!,
+        'api_key': process.env.PAYPER_API_KEY!,
       },
       body: JSON.stringify({
         api_user: process.env.PAYPER_ACCOUNT,
+        woocommerce: '1',
+        casual_customer: '1',
         customer_mail: order.customerEmail,
         customer_name: order.customerName,
         customer_mobile: order.customerPhone,
@@ -52,15 +54,9 @@ export async function POST(
           description: item.name,
           quantity: item.qty,
           price_per_unit: item.price,
-          include_vat: true,
+          include_vat: 'true',
         })),
-        receipt_lines: [
-          {
-            payment_type: 'Cc',
-            date: dateStr,
-            amount: order.total,
-          },
-        ],
+        receipt_lines: [{ payment_type: 'Cc', date: dateStr, amount: order.total }],
       }),
     })
 
