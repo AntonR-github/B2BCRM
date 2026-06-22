@@ -74,6 +74,15 @@ export async function deleteProduct(id: string, siteId: string) {
   revalidatePath(`/sites/${siteId}/products`)
 }
 
+export async function reorderProducts(siteId: string, orderedIds: string[]) {
+  const session = await auth()
+  if (!session) throw new Error('Unauthorized')
+  await Promise.all(orderedIds.map((id, index) =>
+    prisma.product.update({ where: { id }, data: { order: index } })
+  ))
+  revalidatePath(`/sites/${siteId}/products`)
+}
+
 export async function clearAllProducts(siteId: string) {
   const session = await auth()
   if (!session || session.user.role !== 'ADMIN') throw new Error('Forbidden')

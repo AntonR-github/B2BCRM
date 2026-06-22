@@ -1,7 +1,7 @@
 'use client'
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useRef } from 'react'
 import Image from 'next/image'
-import { createProduct, updateProduct, deleteProduct, toggleProductActive, clearAllProducts } from '@/app/actions/products'
+import { createProduct, updateProduct, deleteProduct, toggleProductActive, clearAllProducts, reorderProducts } from '@/app/actions/products'
 import { ImageUpload } from '@/components/image-upload'
 
 type Product = {
@@ -136,7 +136,7 @@ function Field({ label, name, defaultValue, type = 'text' }: { label: string; na
 }
 
 export function ProductsClient({
-  products,
+  products: initialProducts,
   siteId,
   siteSlug,
   siteName,
@@ -146,13 +146,15 @@ export function ProductsClient({
   siteSlug: string
   siteName: string
 }) {
+  const [items, setItems] = useState(initialProducts)
   const [creating, setCreating] = useState(false)
   const [pending, startTransition] = useTransition()
+  const dragIndex = useRef<number | null>(null)
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-white">Products — {siteName} <span className="text-slate-500 text-lg font-normal">({products.length})</span></h1>
+        <h1 className="text-2xl font-bold text-white">Products — {siteName} <span className="text-slate-500 text-lg font-normal">({items.length})</span></h1>
         <div className="flex items-center gap-3">
           <button
             onClick={async () => {
@@ -169,13 +171,36 @@ export function ProductsClient({
         </div>
       </div>
 
-      {products.length === 0 && !creating ? (
+      {items.length === 0 && !creating ? (
         <div className="rounded-xl border border-slate-800 bg-slate-900 p-12 text-center text-slate-500">
           No products yet. Create one above.
         </div>
       ) : (
         <div className="flex flex-col gap-3">
-          {products.map(p => <ProductRow key={p.id} product={p} siteId={siteId} siteSlug={siteSlug} />)}
+          {items.map((p, i) => (
+            <div
+              key={p.id}
+              draggable
+              onDragStart={() => { dragIndex.current = i }}
+              onDragOver={e => { e.preventDefault() }}
+              onDrop={() => {
+                const from = dragIndex.current
+                if (from === null || from === i) return
+                const next = [...items]
+                const [moved] = next.splice(from, 1)
+                next.splice(i, 0, moved)
+                setItems(next)
+                dragIndex.current = null
+                startTransition(() => reorderProducts(siteId, next.map(x => x.id)))
+              }}
+              className="flex items-center gap-2"
+            >
+              <div className="text-slate-600 hover:text-slate-400 cursor-grab active:cursor-grabbing px-1 text-lg select-none">⠿</div>
+              <div className="flex-1">
+                <ProductRow product={p} siteId={siteId} siteSlug={siteSlug} />
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
