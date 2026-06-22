@@ -123,22 +123,25 @@ model Coupon {
 }
 
 model Product {
-  id           String   @id @default(cuid())
-  siteId       String
-  handle       String
-  name         String
-  price        Float
-  description  String?
-  badge        String?
-  image        String?
-  payperSku    String?
-  cardFeatures String[] @default([])
-  features     String[] @default([])
-  active       Boolean  @default(true)
-  order        Int      @default(0)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  site         Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  id              String   @id @default(cuid())
+  siteId          String
+  handle          String
+  name            String
+  price           Float
+  description     String?
+  badge           String?
+  image           String?
+  payperSku       String?
+  cardFeatures    String[] @default([])
+  features        String[] @default([])
+  active          Boolean  @default(true)
+  order           Int      @default(0)
+  metaTitle       String?
+  metaDescription String?
+  ogImage         String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  site            Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
 
   @@unique([siteId, handle])
   @@index([siteId])

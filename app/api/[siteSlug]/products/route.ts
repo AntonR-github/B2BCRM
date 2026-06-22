@@ -24,6 +24,9 @@ export async function GET(
       payperSku: true,
       cardFeatures: true,
       features: true,
+      metaTitle: true,
+      metaDescription: true,
+      ogImage: true,
     },
   })
 

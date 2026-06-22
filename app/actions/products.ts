@@ -48,13 +48,16 @@ export async function updateProduct(formData: FormData) {
   const badge       = (formData.get('badge') as string) || null
   const image       = (formData.get('image') as string) || null
   const payperSku   = (formData.get('payperSku') as string) || null
-  const cardFeatures = parseFeatures(formData.get('cardFeatures') as string ?? '')
-  const features    = parseFeatures(formData.get('features') as string ?? '')
-  const active      = formData.get('active') === 'true'
+  const cardFeatures    = parseFeatures(formData.get('cardFeatures') as string ?? '')
+  const features        = parseFeatures(formData.get('features') as string ?? '')
+  const active          = formData.get('active') === 'true'
+  const metaTitle       = (formData.get('metaTitle') as string) || null
+  const metaDescription = (formData.get('metaDescription') as string) || null
+  const ogImage         = (formData.get('ogImage') as string) || null
 
   await prisma.product.update({
     where: { id },
-    data: { name, handle, price, description, badge, image, payperSku, cardFeatures, features, active },
+    data: { name, handle, price, description, badge, image, payperSku, cardFeatures, features, active, metaTitle, metaDescription, ogImage },
   })
 
   revalidatePath(`/sites/${siteId}/products`)

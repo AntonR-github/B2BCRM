@@ -17,6 +17,9 @@ type Product = {
   features: string[]
   active: boolean
   order: number
+  metaTitle: string | null
+  metaDescription: string | null
+  ogImage: string | null
 }
 
 function ProductRow({
@@ -56,6 +59,14 @@ function ProductRow({
           <Field label="Card features (comma-separated)" name="cardFeatures" defaultValue={product.cardFeatures.join(', ')} />
           <Field label="Full features (comma-separated)" name="features" defaultValue={product.features.join(', ')} />
           <ImageUpload name="image" label="Product image" defaultValue={product.image ?? ''} siteSlug={siteSlug} />
+          <div className="border-t border-slate-800 pt-4">
+            <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider mb-3">SEO</p>
+            <div className="flex flex-col gap-4">
+              <Field label="Meta Title" name="metaTitle" defaultValue={product.metaTitle ?? ''} />
+              <Field label="Meta Description" name="metaDescription" defaultValue={product.metaDescription ?? ''} />
+              <Field label="OG Image URL (optional)" name="ogImage" defaultValue={product.ogImage ?? ''} />
+            </div>
+          </div>
           <div className="flex items-center gap-3">
             <label className="text-sm text-slate-400">Active</label>
             <select name="active" defaultValue={product.active ? 'true' : 'false'} className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500">
