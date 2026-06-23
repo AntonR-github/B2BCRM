@@ -65,6 +65,31 @@ export async function POST(
           ...(order.shipping > 0 ? [{ description: 'דמי משלוח', quantity: 1, price_per_unit: order.shipping, include_vat: 'true' }] : []),
         ],
         receipt_lines: [{ payment_type: 'Cc', date: dateStr, amount: order.total }],
+        order_data: {
+          id: orderId,
+          status: 'processing',
+          currency: 'ILS',
+          total: String(order.total),
+          date_created: { date: order.createdAt.toISOString(), timezone_type: 3, timezone: 'Asia/Jerusalem' },
+          date_paid: { date: new Date().toISOString(), timezone_type: 3, timezone: 'Asia/Jerusalem' },
+          billing: {
+            first_name: order.customerName.split(' ')[0] ?? '',
+            last_name: order.customerName.split(' ').slice(1).join(' ') ?? '',
+            email: order.customerEmail,
+            phone: order.customerPhone,
+            address_1: order.customerAddress,
+            city: '', country: 'IL',
+          },
+          shipping: {
+            first_name: order.customerName.split(' ')[0] ?? '',
+            last_name: order.customerName.split(' ').slice(1).join(' ') ?? '',
+            address_1: order.customerAddress,
+            city: '', country: 'IL', phone: order.customerPhone,
+          },
+          payment_method: 'cc',
+          payment_method_title: 'תשלום מאובטח בכרטיס אשראי',
+          created_via: 'checkout',
+        },
       }),
     })
 
