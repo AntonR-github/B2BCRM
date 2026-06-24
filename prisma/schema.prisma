@@ -79,6 +79,7 @@ model Site {
   textFields           TextField[]
   siteSeo              SiteSEO?
   submissions          FormSubmission[]
+  reviews              Review[]
   orders               Order[]
   coupons              Coupon[]
   products             Product[]
@@ -147,23 +148,50 @@ model Product {
   description     String?
   badge           String?
   image           String?
+  images          String[]  @default([])
   payperSku       String?
   cardFeatures    String[]  @default([])
   features        String[]  @default([])
   active          Boolean   @default(true)
   order           Int       @default(0)
-  metaTitle       String?
-  metaDescription String?
-  ogImage         String?
-  categoryId      String?
+  metaTitle         String?
+  metaDescription   String?
+  ogImage           String?
+  categoryId        String?
+  videoUrl          String?
+  soldCount         String?
+  rating            Float?
+  reviewCount       Int?
+  specsRaw          String?   @db.Text
+  inTheBox          String?   @db.Text
+  usageInstructions String?   @db.Text
+  warrantyInfo      String?   @db.Text
+  faqRaw            String?   @db.Text
+  relatedProductIds String[]  @default([])
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   site            Site      @relation(fields: [siteId], references: [id], onDelete: Cascade)
   category        Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  reviews         Review[]
 
   @@unique([siteId, handle])
   @@index([siteId])
   @@index([categoryId])
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  siteId    String
+  productId String
+  name      String
+  rating    Int
+  text      String   @db.Text
+  approved  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  site      Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([siteId, productId])
 }
 
 model FormSubmission {

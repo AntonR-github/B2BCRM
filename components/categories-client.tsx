@@ -1,5 +1,6 @@
 'use client'
 import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { createCategory, updateCategory, deleteCategory } from '@/app/actions/categories'
 
 type Category = { id: string; name: string; slug: string; active: boolean; order: number; _count?: { products: number } }
@@ -16,6 +17,7 @@ function Field({ label, name, defaultValue }: { label: string; name: string; def
 function CategoryRow({ cat, siteId }: { cat: Category; siteId: string }) {
   const [editing, setEditing] = useState(false)
   const [pending, startTransition] = useTransition()
+  const router = useRouter()
 
   if (editing) {
     return (
@@ -24,7 +26,7 @@ function CategoryRow({ cat, siteId }: { cat: Category; siteId: string }) {
           action={(fd) => {
             fd.append('id', cat.id)
             fd.append('siteId', siteId)
-            startTransition(async () => { await updateCategory(fd); setEditing(false) })
+            startTransition(async () => { await updateCategory(fd); setEditing(false); router.refresh() })
           }}
           className="flex flex-col gap-4"
         >

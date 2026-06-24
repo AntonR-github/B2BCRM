@@ -1,6 +1,7 @@
 'use client'
-import { useState, useTransition, useRef } from 'react'
+import { useState, useTransition, useRef, useEffect } from 'react'
 import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 import { createProduct, updateProduct, deleteProduct, toggleProductActive, clearAllProducts, reorderProducts } from '@/app/actions/products'
 import { ImageUpload } from '@/components/image-upload'
 
@@ -14,6 +15,7 @@ type Product = {
   description: string | null
   badge: string | null
   image: string | null
+  images: string[]
   payperSku: string | null
   cardFeatures: string[]
   features: string[]
@@ -24,21 +26,101 @@ type Product = {
   ogImage: string | null
   categoryId: string | null
   category: Category | null
+  videoUrl: string | null
+  soldCount: string | null
+  rating: number | null
+  reviewCount: number | null
+  specsRaw: string | null
+  inTheBox: string | null
+  usageInstructions: string | null
+  warrantyInfo: string | null
+  faqRaw: string | null
+  relatedProductIds: string[]
+}
+
+function MultiImageUpload({ name, label, defaultValues, siteSlug }: { name: string; label: string; defaultValues: string[]; siteSlug: string }) {
+  const [urls, setUrls] = useState<string[]>(defaultValues)
+  const [uploading, setUploading] = useState<number | null>(null)
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>, idx: number) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(idx)
+    const fd = new FormData()
+    fd.append('file', file)
+    if (siteSlug) fd.append('siteSlug', siteSlug)
+    const res = await fetch('/api/upload', { method: 'POST', body: fd })
+    const data = await res.json()
+    setUrls(prev => prev.map((u, i) => i === idx ? data.url : u))
+    setUploading(null)
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      <label className="block text-sm text-slate-400 uppercase tracking-wide">{label}</label>
+      {urls.map((url, i) => (
+        <div key={i} className="flex items-center gap-3">
+          <input type="hidden" name={name} value={url} />
+          {url ? (
+            <Image src={url} alt={`image ${i + 1}`} width={80} height={80} className="rounded-lg object-contain bg-slate-800 shrink-0" unoptimized />
+          ) : (
+            <div className="w-20 h-20 rounded-lg bg-slate-800 border border-slate-700 shrink-0" />
+          )}
+          <label className="cursor-pointer bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white text-sm px-3 py-1.5 rounded-lg transition-colors">
+            {uploading === i ? 'Uploading...' : url ? 'Replace' : 'Upload'}
+            <input type="file" accept="image/*" className="hidden" onChange={e => handleFile(e, i)} disabled={uploading !== null} />
+          </label>
+          <button type="button" onClick={() => setUrls(prev => prev.filter((_, idx) => idx !== i))} className="text-red-400 hover:text-red-300 text-sm">Remove</button>
+        </div>
+      ))}
+      <button type="button" onClick={() => setUrls(prev => [...prev, ''])}
+        className="self-start text-sm text-indigo-400 hover:text-indigo-300 border border-dashed border-indigo-800 px-4 py-2 rounded-lg">
+        + Add image
+      </button>
+    </div>
+  )
+}
+
+function RelatedProductsSelect({ currentId, allProducts, selected }: { currentId: string; allProducts: Product[]; selected: string[] }) {
+  const [chosen, setChosen] = useState<string[]>(selected)
+  const others = allProducts.filter(p => p.id !== currentId)
+  function toggle(id: string) {
+    setChosen(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
+  }
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="text-xs text-slate-500">Select which products appear in the related section (leave empty for auto)</p>
+      {chosen.map(id => <input key={id} type="hidden" name="relatedProductIds" value={id} />)}
+      <div className="flex flex-col gap-1 max-h-48 overflow-y-auto border border-slate-700 rounded-lg p-2">
+        {others.length === 0 && <p className="text-slate-500 text-sm px-2 py-1">No other products yet</p>}
+        {others.map(p => (
+          <label key={p.id} className="flex items-center gap-3 px-2 py-1.5 rounded-lg hover:bg-slate-800 cursor-pointer">
+            <input type="checkbox" checked={chosen.includes(p.id)} onChange={() => toggle(p.id)} className="accent-indigo-500" />
+            <span className="text-sm text-white">{p.name}</span>
+            <span className="text-xs text-slate-500 ml-auto">₪{p.price}</span>
+          </label>
+        ))}
+      </div>
+    </div>
+  )
 }
 
 function ProductRow({
   product,
+  allProducts,
   siteId,
   siteSlug,
   categories,
 }: {
   product: Product
+  allProducts: Product[]
   siteId: string
   siteSlug: string
   categories: Category[]
 }) {
   const [editing, setEditing] = useState(false)
   const [pending, startTransition] = useTransition()
+  const router = useRouter()
 
   if (editing) {
     return (
@@ -50,6 +132,7 @@ function ProductRow({
             startTransition(async () => {
               await updateProduct(fd)
               setEditing(false)
+              router.refresh()
             })
           }}
           className="flex flex-col gap-4"
@@ -71,7 +154,28 @@ function ProductRow({
           <Field label="Payper SKU / makat (optional)" name="payperSku" defaultValue={product.payperSku ?? ''} />
           <Field label="Card features (comma-separated)" name="cardFeatures" defaultValue={product.cardFeatures.join(', ')} />
           <Field label="Full features (comma-separated)" name="features" defaultValue={product.features.join(', ')} />
-          <ImageUpload name="image" label="Product image" defaultValue={product.image ?? ''} siteSlug={siteSlug} />
+          <ImageUpload name="image" label="Main product image" defaultValue={product.image ?? ''} siteSlug={siteSlug} />
+          <MultiImageUpload name="images" label="Additional images (gallery)" defaultValues={product.images} siteSlug={siteSlug} />
+          <div className="border-t border-slate-800 pt-4">
+            <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider mb-3">Product Page Content</p>
+            <div className="flex flex-col gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <Field label="Rating (e.g. 4.8)" name="rating" type="number" defaultValue={product.rating != null ? String(product.rating) : ''} />
+                <Field label="Review count (e.g. 127)" name="reviewCount" type="number" defaultValue={product.reviewCount != null ? String(product.reviewCount) : ''} />
+                <Field label="Sold count (e.g. 2,314)" name="soldCount" defaultValue={product.soldCount ?? ''} />
+              </div>
+              <Field label="Video URL (Why Choose section)" name="videoUrl" defaultValue={product.videoUrl ?? ''} />
+              <TextArea label='Specs table (one row per line: "שם שדה|ערך|קטגוריה")' name="specsRaw" defaultValue={product.specsRaw ?? ''} rows={6} />
+              <TextArea label="מה בקופסה (In the box tab)" name="inTheBox" defaultValue={product.inTheBox ?? ''} rows={3} />
+              <TextArea label="הוראות שימוש (Usage instructions tab)" name="usageInstructions" defaultValue={product.usageInstructions ?? ''} rows={3} />
+              <TextArea label="אחריות ושירות (Warranty tab)" name="warrantyInfo" defaultValue={product.warrantyInfo ?? ''} rows={3} />
+              <TextArea label='FAQ (one per line: "שאלה|תשובה")' name="faqRaw" defaultValue={product.faqRaw ?? ''} rows={6} />
+            </div>
+          </div>
+          <div className="border-t border-slate-800 pt-4">
+            <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider mb-3">Related Products</p>
+            <RelatedProductsSelect currentId={product.id} allProducts={allProducts} selected={product.relatedProductIds} />
+          </div>
           <div className="border-t border-slate-800 pt-4">
             <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider mb-3">SEO</p>
             <div className="flex flex-col gap-4">
@@ -160,6 +264,15 @@ function Field({ label, name, defaultValue, type = 'text' }: { label: string; na
   )
 }
 
+function TextArea({ label, name, defaultValue, rows = 4 }: { label: string; name: string; defaultValue: string; rows?: number }) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label className="text-sm text-slate-400">{label}</label>
+      <textarea name={name} defaultValue={defaultValue} rows={rows} className="bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white text-base focus:outline-none focus:border-indigo-500 resize-y font-mono" />
+    </div>
+  )
+}
+
 export function ProductsClient({
   products: initialProducts,
   siteId,
@@ -177,6 +290,8 @@ export function ProductsClient({
   const [creating, setCreating] = useState(false)
   const [pending, startTransition] = useTransition()
   const dragIndex = useRef<number | null>(null)
+
+  useEffect(() => { setItems(initialProducts) }, [initialProducts])
 
   return (
     <div>
@@ -224,7 +339,7 @@ export function ProductsClient({
             >
               <div className="text-slate-600 hover:text-slate-400 cursor-grab active:cursor-grabbing px-1 text-lg select-none">⠿</div>
               <div className="flex-1">
-                <ProductRow product={p} siteId={siteId} siteSlug={siteSlug} categories={categories} />
+                <ProductRow product={p} allProducts={items} siteId={siteId} siteSlug={siteSlug} categories={categories} />
               </div>
             </div>
           ))}

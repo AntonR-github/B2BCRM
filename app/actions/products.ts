@@ -22,15 +22,26 @@ export async function createProduct(formData: FormData) {
   const description = (formData.get('description') as string) || null
   const badge       = (formData.get('badge') as string) || null
   const image       = (formData.get('image') as string) || null
+  const images      = formData.getAll('images').map(v => String(v)).filter(Boolean)
   const payperSku   = (formData.get('payperSku') as string) || null
   const cardFeatures = parseFeatures(formData.get('cardFeatures') as string ?? '')
   const features    = parseFeatures(formData.get('features') as string ?? '')
-  const categoryId  = (formData.get('categoryId') as string) || null
+  const categoryId        = (formData.get('categoryId') as string) || null
+  const videoUrl          = (formData.get('videoUrl') as string) || null
+  const soldCount         = (formData.get('soldCount') as string) || null
+  const rating            = formData.get('rating') ? parseFloat(formData.get('rating') as string) : null
+  const reviewCount       = formData.get('reviewCount') ? parseInt(formData.get('reviewCount') as string) : null
+  const specsRaw          = (formData.get('specsRaw') as string) || null
+  const inTheBox          = (formData.get('inTheBox') as string) || null
+  const usageInstructions = (formData.get('usageInstructions') as string) || null
+  const warrantyInfo      = (formData.get('warrantyInfo') as string) || null
+  const faqRaw              = (formData.get('faqRaw') as string) || null
+  const relatedProductIds   = formData.getAll('relatedProductIds').map(v => String(v)).filter(Boolean)
 
   const count = await prisma.product.count({ where: { siteId } })
 
   await prisma.product.create({
-    data: { siteId, name, handle, price, description, badge, image, payperSku, cardFeatures, features, categoryId, order: count },
+    data: { siteId, name, handle, price, description, badge, image, images, payperSku, cardFeatures, features, categoryId, order: count, videoUrl, soldCount, rating, reviewCount, specsRaw, inTheBox, usageInstructions, warrantyInfo, faqRaw, relatedProductIds },
   })
 
   revalidatePath(`/sites/${siteId}/products`)
@@ -48,6 +59,7 @@ export async function updateProduct(formData: FormData) {
   const description = (formData.get('description') as string) || null
   const badge       = (formData.get('badge') as string) || null
   const image       = (formData.get('image') as string) || null
+  const images      = formData.getAll('images').map(v => String(v)).filter(Boolean)
   const payperSku   = (formData.get('payperSku') as string) || null
   const cardFeatures    = parseFeatures(formData.get('cardFeatures') as string ?? '')
   const features        = parseFeatures(formData.get('features') as string ?? '')
@@ -55,11 +67,21 @@ export async function updateProduct(formData: FormData) {
   const metaTitle       = (formData.get('metaTitle') as string) || null
   const metaDescription = (formData.get('metaDescription') as string) || null
   const ogImage         = (formData.get('ogImage') as string) || null
-  const categoryId      = (formData.get('categoryId') as string) || null
+  const categoryId        = (formData.get('categoryId') as string) || null
+  const videoUrl          = (formData.get('videoUrl') as string) || null
+  const soldCount         = (formData.get('soldCount') as string) || null
+  const rating            = formData.get('rating') ? parseFloat(formData.get('rating') as string) : null
+  const reviewCount       = formData.get('reviewCount') ? parseInt(formData.get('reviewCount') as string) : null
+  const specsRaw          = (formData.get('specsRaw') as string) || null
+  const inTheBox          = (formData.get('inTheBox') as string) || null
+  const usageInstructions = (formData.get('usageInstructions') as string) || null
+  const warrantyInfo      = (formData.get('warrantyInfo') as string) || null
+  const faqRaw              = (formData.get('faqRaw') as string) || null
+  const relatedProductIds   = formData.getAll('relatedProductIds').map(v => String(v)).filter(Boolean)
 
   await prisma.product.update({
     where: { id },
-    data: { name, handle, price, description, badge, image, payperSku, cardFeatures, features, active, metaTitle, metaDescription, ogImage, categoryId },
+    data: { name, handle, price, description, badge, image, images, payperSku, cardFeatures, features, active, metaTitle, metaDescription, ogImage, categoryId, videoUrl, soldCount, rating, reviewCount, specsRaw, inTheBox, usageInstructions, warrantyInfo, faqRaw, relatedProductIds },
   })
 
   revalidatePath(`/sites/${siteId}/products`)
