@@ -186,7 +186,7 @@ model Review {
   name      String
   rating    Int
   text      String   @db.Text
-  approved  Boolean  @default(true)
+  approved  Boolean  @default(false)
   createdAt DateTime @default(now())
   site      Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)

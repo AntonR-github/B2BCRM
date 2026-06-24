@@ -159,16 +159,14 @@ function ProductRow({
           <div className="border-t border-slate-800 pt-4">
             <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider mb-3">Product Page Content</p>
             <div className="flex flex-col gap-4">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <Field label="Rating (e.g. 4.8)" name="rating" type="number" defaultValue={product.rating != null ? String(product.rating) : ''} />
-                <Field label="Review count (e.g. 127)" name="reviewCount" type="number" defaultValue={product.reviewCount != null ? String(product.reviewCount) : ''} />
+              <div className="grid grid-cols-1 sm:grid-cols-1 gap-4">
                 <Field label="Sold count (e.g. 2,314)" name="soldCount" defaultValue={product.soldCount ?? ''} />
               </div>
               <Field label="Video URL (Why Choose section)" name="videoUrl" defaultValue={product.videoUrl ?? ''} />
-              <TextArea label='Specs table (one row per line: "שם שדה|ערך|קטגוריה")' name="specsRaw" defaultValue={product.specsRaw ?? ''} rows={6} />
-              <TextArea label="מה בקופסה (In the box tab)" name="inTheBox" defaultValue={product.inTheBox ?? ''} rows={3} />
-              <TextArea label="הוראות שימוש (Usage instructions tab)" name="usageInstructions" defaultValue={product.usageInstructions ?? ''} rows={3} />
-              <TextArea label="אחריות ושירות (Warranty tab)" name="warrantyInfo" defaultValue={product.warrantyInfo ?? ''} rows={3} />
+              <SpecsEditor name="specsRaw" defaultValue={product.specsRaw ?? ''} />
+              <ListEditor label="מה בקופסה" name="inTheBox" defaultValue={product.inTheBox ?? ''} />
+              <ListEditor label="הוראות שימוש" name="usageInstructions" defaultValue={product.usageInstructions ?? ''} />
+              <ListEditor label="אחריות ושירות" name="warrantyInfo" defaultValue={product.warrantyInfo ?? ''} />
               <TextArea label='FAQ (one per line: "שאלה|תשובה")' name="faqRaw" defaultValue={product.faqRaw ?? ''} rows={6} />
             </div>
           </div>
@@ -251,6 +249,64 @@ function ProductRow({
           Delete
         </button>
       </div>
+    </div>
+  )
+}
+
+function ListEditor({ label, name, defaultValue }: { label: string; name: string; defaultValue: string }) {
+  const [items, setItems] = useState<string[]>(() => defaultValue ? defaultValue.split('\n').filter(Boolean) : [''])
+  const serialized = items.join('\n')
+  const add = () => setItems(prev => [...prev, ''])
+  const remove = (i: number) => setItems(prev => prev.filter((_, idx) => idx !== i))
+  const update = (i: number, val: string) => setItems(prev => prev.map((v, idx) => idx === i ? val : v))
+  return (
+    <div className="flex flex-col gap-2">
+      <input type="hidden" name={name} value={serialized} />
+      <label className="text-sm text-slate-400">{label}</label>
+      <div className="flex flex-col gap-2">
+        {items.map((item, i) => (
+          <div key={i} className="flex gap-2 items-center">
+            <input
+              value={item}
+              onChange={e => update(i, e.target.value)}
+              className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500"
+              placeholder="פריט..."
+            />
+            <button type="button" onClick={() => remove(i)} className="text-slate-500 hover:text-red-400 text-lg leading-none px-1">×</button>
+          </div>
+        ))}
+      </div>
+      <button type="button" onClick={add} className="self-start text-sm text-indigo-400 hover:text-indigo-300 mt-1">+ הוסף שורה</button>
+    </div>
+  )
+}
+
+function SpecsEditor({ name, defaultValue }: { name: string; defaultValue: string }) {
+  const parse = (raw: string) => raw ? raw.split('\n').filter(Boolean).map(l => { const [a='',b='',c=''] = l.split('|'); return { a, b, c } }) : [{ a: '', b: '', c: '' }]
+  const [rows, setRows] = useState(() => parse(defaultValue))
+  const serialized = rows.map(r => `${r.a}|${r.b}|${r.c}`).filter(r => r !== '||').join('\n')
+  const add = () => setRows(prev => [...prev, { a: '', b: '', c: '' }])
+  const remove = (i: number) => setRows(prev => prev.filter((_, idx) => idx !== i))
+  const update = (i: number, key: 'a'|'b'|'c', val: string) => setRows(prev => prev.map((r, idx) => idx === i ? { ...r, [key]: val } : r))
+  const inp = "bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500"
+  return (
+    <div className="flex flex-col gap-2">
+      <input type="hidden" name={name} value={serialized} />
+      <label className="text-sm text-slate-400">מפרט טכני</label>
+      <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 text-xs text-slate-500 px-1">
+        <span>שם שדה</span><span>ערך</span><span>קטגוריה</span><span />
+      </div>
+      <div className="flex flex-col gap-2">
+        {rows.map((row, i) => (
+          <div key={i} className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 items-center">
+            <input value={row.a} onChange={e => update(i,'a',e.target.value)} className={inp} placeholder="שם שדה" />
+            <input value={row.b} onChange={e => update(i,'b',e.target.value)} className={inp} placeholder="ערך" />
+            <input value={row.c} onChange={e => update(i,'c',e.target.value)} className={inp} placeholder="קטגוריה" />
+            <button type="button" onClick={() => remove(i)} className="text-slate-500 hover:text-red-400 text-lg leading-none px-1">×</button>
+          </div>
+        ))}
+      </div>
+      <button type="button" onClick={add} className="self-start text-sm text-indigo-400 hover:text-indigo-300 mt-1">+ הוסף שורה</button>
     </div>
   )
 }

@@ -12,6 +12,7 @@ export function SiteTabs({ siteId }: { siteId: string }) {
     { label: '🔍 SEO',        href: `/sites/${siteId}/seo` },
     { label: '📬 Submissions', href: `/sites/${siteId}/submissions` },
     { label: '📦 Products',    href: `/sites/${siteId}/products` },
+    { label: '⭐ Reviews',     href: `/sites/${siteId}/reviews` },
     { label: '🗂 Categories',  href: `/sites/${siteId}/categories` },
     { label: '🛒 Orders',     href: `/sites/${siteId}/orders` },
     { label: '🏷 Coupons',    href: `/sites/${siteId}/coupons` },
