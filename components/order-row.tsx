@@ -24,6 +24,7 @@ type Order = {
   customerAddress: string
   items: OrderItem[]
   payperDocId: string | null
+  customerNote: string | null
   shippingNote: string | null
   createdAt: Date
 }
@@ -71,14 +72,17 @@ export function OrderRow({ order, siteId }: { order: Order; siteId: string }) {
         )}
       </div>
 
-      {/* Shipping note */}
-      <div className="border-t border-slate-800 pt-3">
+      {/* Customer order notes (read-only) + internal tracking note */}
+      <div className="border-t border-slate-800 pt-3 flex flex-col gap-2">
+        {order.customerNote && (
+          <p className="text-xs text-amber-400">💬 הערת לקוח: {order.customerNote}</p>
+        )}
         {editingNote ? (
           <div className="flex gap-2">
             <input
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              placeholder="Tracking number or note…"
+              placeholder="Tracking number or internal note…"
               className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:border-indigo-500"
             />
             <button

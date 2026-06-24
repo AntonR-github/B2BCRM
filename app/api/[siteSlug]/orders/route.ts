@@ -19,6 +19,11 @@ export async function POST(
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
   }
 
+  const customerAddress = [
+    customer.address ?? `${customer.street ?? ''} ${customer.houseNumber ?? ''}${customer.apartment ? ` דירה ${customer.apartment}` : ''}`.trim(),
+    customer.city ?? '',
+  ].filter(Boolean).join(', ')
+
   const order = await prisma.order.create({
     data: {
       id,
@@ -28,9 +33,10 @@ export async function POST(
       customerName: `${customer.firstName ?? ''} ${customer.lastName ?? ''}`.trim(),
       customerEmail: customer.email,
       customerPhone: customer.phone ?? '',
-      customerAddress: `${customer.address ?? ''}, ${customer.city ?? ''} ${customer.zip ?? ''}`.trim(),
+      customerAddress,
       items,
       status: 'pending',
+      ...(customer.notes ? { customerNote: customer.notes } : {}),
     },
   })
 
