@@ -43,10 +43,20 @@ export function Sidebar({
             </Link>
           )
         })}
+        <Link
+          href="/account"
+          className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-base transition-colors mt-4 border-t border-slate-800 pt-4 ${
+            pathname.startsWith('/account')
+              ? 'bg-indigo-600 text-white'
+              : 'text-slate-400 hover:text-white hover:bg-slate-800'
+          }`}
+        >
+          👤 Account
+        </Link>
         {isAdmin && (
           <Link
             href="/admin"
-            className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-base text-slate-400 hover:text-white hover:bg-slate-800 mt-4 border-t border-slate-800 pt-4"
+            className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-base text-slate-400 hover:text-white hover:bg-slate-800"
           >
             ⚙️ Admin
           </Link>

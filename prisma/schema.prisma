@@ -255,3 +255,11 @@ model SiteSEO {
   schemaSameAs    String? @db.Text
   site            Site    @relation(fields: [siteId], references: [id], onDelete: Cascade)
 }
+
+model PasswordReset {
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique
+  expires   DateTime
+  createdAt DateTime @default(now())
+}
