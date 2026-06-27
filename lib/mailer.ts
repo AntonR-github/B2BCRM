@@ -10,8 +10,7 @@ export const transporter = nodemailer.createTransport({
   },
 })
 
-export async function sendPasswordResetEmail(to: string, token: string) {
-  const baseUrl = process.env.CRM_URL ?? 'https://www.ducks.co.il'
+export async function sendPasswordResetEmail(to: string, token: string, baseUrl: string) {
   const resetUrl = `${baseUrl}/reset-password?token=${token}`
   await transporter.sendMail({
     from: `"CRM" <${process.env.SMTP_USER}>`,
