@@ -18,13 +18,9 @@ export async function POST(req: NextRequest) {
 
   await prisma.passwordReset.create({ data: { email, token, expires } })
 
-  // Base URL for the reset link. Never derive this from request headers: a forged
-  // Host header would poison the link in the victim's email and leak the token.
-  // Production must set CRM_URL (fail closed if missing); dev defaults to localhost.
   const baseUrl = process.env.CRM_URL ?? (process.env.NODE_ENV === 'production' ? null : 'http://localhost:3000')
   if (!baseUrl) {
     console.error('[forgot-password] CRM_URL is not set; refusing to send a reset link')
-    // Generic OK response so we never reveal config/account state to the caller
     return NextResponse.json({ ok: true })
   }
 
