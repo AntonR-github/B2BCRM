@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
-import BlogGenerator from '@/jsx/xvape-blog-generator.jsx'
+import { BlogGeneratorClient } from './BlogGeneratorClient'
 
 export default async function BlogGeneratorPage() {
   const session = await auth()
@@ -12,5 +12,5 @@ export default async function BlogGeneratorPage() {
     orderBy: { name: 'asc' },
   })
 
-  return <BlogGenerator sites={sites} />
+  return <BlogGeneratorClient sites={sites} />
 }
