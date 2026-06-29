@@ -298,7 +298,7 @@ export default function App({ sites = [] }) {
   const [stage, setStage] = useState("");
   const [prog, setProg] = useState({ cur: 0, total: 0 });
   const [err, setErr] = useState("");
-  const [r, setR] = useState(null);
+  const [r, setR] = useState({ title: "", slug: "", tags: [], bodyHtml: "", metaTitle: "", metaDescription: "", faq: [] });
   const [copied, setCopied] = useState("");
   const [bodyMode, setBodyMode] = useState("preview");
   const [status, setStatus] = useState("PUBLISHED");
@@ -443,11 +443,6 @@ export default function App({ sites = [] }) {
 
         {/* ===================== TAB: CRM MIRROR ===================== */}
         {tab === "crm" && (
-          !r ? (
-            <div style={{ background: C.card, border: `1px dashed ${C.line}`, borderRadius: 16, padding: 40, textAlign: "center", color: C.muted, fontSize: 15 }}>
-              צור קודם כתבה בלשונית <b>① מחולל</b> — והשדות כאן יתמלאו אוטומטית.
-            </div>
-          ) : (
             <div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, flexWrap: "wrap", gap: 8 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
@@ -549,7 +544,6 @@ export default function App({ sites = [] }) {
                 </div>
               </div>
             </div>
-          )
         )}
       </div>
     </div>
