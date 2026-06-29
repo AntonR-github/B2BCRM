@@ -8,5 +8,6 @@ interface Site {
 }
 
 export function BlogGeneratorClient({ sites }: { sites: Site[] }) {
-  return <BlogGenerator sites={sites} />
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return <BlogGenerator sites={sites as any} />
 }
